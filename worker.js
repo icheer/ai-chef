@@ -134,7 +134,9 @@ function getContentType(pathname) {
 
 // Gemini API密钥负载均衡
 function getRandomApiKey(env) {
-  const apiKeys = env.GEMINI_API_KEYS.split(',')
+  const keys = env.GEMINI_API_KEYS;
+  if (!keys) return null;
+  const apiKeys = keys.split(',')
     .map(key => key.trim())
     .filter(key => key);
   const randomIndex = Math.floor(Math.random() * apiKeys.length);
@@ -144,6 +146,7 @@ function getRandomApiKey(env) {
 // Gemini API调用函数
 async function callGeminiAPI(prompt, model, env) {
   const apiKey = getRandomApiKey(env);
+  if (!apiKey) throw new Error('未配置有效的环境变量: GEMINI_API_KEYS');
   const baseUrl = env.GEMINI_BASE_URL;
 
   const response = await fetch(
