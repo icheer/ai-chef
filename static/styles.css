@@ -642,49 +642,258 @@ button:disabled::before {
 /* 食谱展示区域 */
 .recipe-result {
   margin-top: 2rem;
-}
-
-.recipe-container {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: var(--shadow-medium);
-  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(224, 230, 237, 0.8);
+  overflow: hidden;
 }
 
 .recipe-header {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark));
+  color: white;
+  padding: 2.5rem 2rem;
   text-align: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.recipe-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.recipe-header > * {
+  position: relative;
+  z-index: 1;
 }
 
 .recipe-title {
-  color: var(--primary-color);
-  font-size: 1.8rem;
+  font-size: 2.2rem;
+  font-weight: 700;
   margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .recipe-meta {
   display: flex;
   justify-content: center;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
 .recipe-meta span {
-  background: var(--light-gray);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 0.6rem 1.2rem;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.description {
+.recipe-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.recipe-actions button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 0.8rem 1.5rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.recipe-actions button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.recipe-content {
+  padding: 2rem;
+}
+
+.recipe-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #fafbfc;
+  border-radius: 12px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.recipe-section:last-child {
+  margin-bottom: 0;
+}
+
+.recipe-section h3 {
+  color: var(--primary-color);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recipe-section h3::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--primary-color);
+  border-radius: 50%;
+}
+
+.recipe-description p {
   color: var(--text-secondary);
-  font-style: italic;
-  line-height: 1.5;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+/* 营养信息网格 */
+.nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.nutrition-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #e1e5e9;
+  transition: transform 0.2s ease;
+}
+
+.nutrition-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.nutrition-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.3rem;
+}
+
+.nutrition-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* 食材清单 */
+.ingredients-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.ingredient-item {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+  transition: all 0.2s ease;
+}
+
+.ingredient-item:hover {
+  border-color: var(--primary-color);
+  transform: translateX(5px);
+}
+
+.ingredient-item::before {
+  content: '✓';
+  background: var(--primary-color);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 0.8rem;
+  flex-shrink: 0;
+}
+
+.ingredient-name {
+  font-weight: 500;
+  color: var(--text-color);
+  flex: 1;
+}
+
+.ingredient-amount {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* 制作步骤 */
+.steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+}
+
+.step-item {
+  display: flex;
+  margin-bottom: 1.5rem;
+  align-items: flex-start;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e1e5e9;
+  transition: all 0.3s ease;
+}
+
+.step-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.step-number {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark));
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-right: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(52, 168, 83, 0.3);
+}
+
+.step-content {
+  flex: 1;
+  line-height: 1.6;
+  color: var(--text-color);
 }
 
 /* 营养信息 */
@@ -1244,6 +1453,124 @@ section:nth-child(even) {
   .ingredient-item select {
     min-width: 60px;
     font-size: 0.85rem;
+  }
+}
+
+/* 食谱响应式样式 */
+@media (min-width: 1200px) {
+  .recipe-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .recipe-description,
+  .nutrition-section {
+    grid-column: 1 / -1;
+  }
+  
+  .ingredients-section {
+    grid-column: 1;
+  }
+  
+  .cooking-steps-section {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 1199px) {
+  .recipe-content {
+    display: block;
+  }
+  
+  .recipe-section {
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .recipe-result {
+    margin: 1rem 0;
+    border-radius: 12px;
+  }
+  
+  .recipe-header {
+    padding: 1.5rem 1rem;
+  }
+  
+  .recipe-title {
+    font-size: 1.8rem;
+  }
+  
+  .recipe-content {
+    padding: 1rem;
+  }
+  
+  .recipe-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .recipe-meta {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .recipe-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .recipe-actions button {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .nutrition-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 分享弹窗样式 */
+.swal2-popup.share-popup {
+  border-radius: 16px !important;
+}
+
+.swal2-popup.share-popup .swal2-html-container {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.swal2-popup.share-popup img {
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.swal2-popup.share-popup img:hover {
+  transform: scale(1.02);
+}
+
+/* 移动端分享弹窗优化 */
+@media (max-width: 767px) {
+  .swal2-popup.share-popup {
+    width: 95% !important;
+    margin: 10px !important;
+  }
+  
+  .swal2-popup.share-popup img {
+    max-height: 300px !important;
+  }
+  
+  .swal2-popup.share-popup .swal2-actions {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .swal2-popup.share-popup .swal2-confirm,
+  .swal2-popup.share-popup .swal2-cancel {
+    width: 100% !important;
+    margin: 0 !important;
   }
 }
 

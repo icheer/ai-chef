@@ -342,27 +342,55 @@ const RecipeGeneratorApp = {
     
     async handleShareBlob(blob) {
       try {
-        // 关闭Loading提示
-        Swal.close();
+        // 创建图片URL用于在弹窗中显示
+        const imageUrl = URL.createObjectURL(blob);
         
-        // 检查是否支持Web Share API
-        if (navigator.share && navigator.canShare) {
-          const file = new File([blob], `食谱_${Date.now()}.png`, { type: 'image/png' });
-          
-          if (navigator.canShare({ files: [file] })) {
-            // 移动端：使用Web Share API
-            await navigator.share({
-              title: '我的智能食谱',
-              text: `${this.recipeResult.recipe_name || '美味食谱'} - 用AI生成的美味食谱！`,
-              files: [file]
-            });
-            
-            this.showSuccessMessage('分享成功！');
-            return;
+        // 关闭Loading提示，显示截图预览弹窗
+        await Swal.fire({
+          title: '📱 食谱分享图片',
+          html: `
+            <div style="text-align: center; margin: 20px 0;">
+              <img src="${imageUrl}" 
+                   style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" 
+                   alt="食谱截图">
+              <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                📱 <strong>移动端用户：</strong>长按图片保存到相册<br>
+                💻 <strong>电脑用户：</strong>右键保存图片或点击下载按钮
+              </p>
+            </div>
+          `,
+          width: 600,
+          padding: '20px',
+          showCancelButton: true,
+          confirmButtonText: '💾 直接下载',
+          cancelButtonText: navigator.share ? '📤 系统分享' : '❌ 关闭',
+          showCloseButton: true,
+          customClass: {
+            popup: 'share-popup',
+            image: 'share-image'
+          },
+          willClose: () => {
+            // 清理图片URL
+            URL.revokeObjectURL(imageUrl);
           }
-        }
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            // 用户选择直接下载
+            await this.downloadImage(blob);
+          } else if (result.dismiss === Swal.DismissReason.cancel && navigator.share) {
+            // 用户选择系统分享（仅在支持时显示此按钮）
+            await this.systemShare(blob);
+          }
+        });
         
-        // 降级方案：下载图片
+      } catch (error) {
+        console.error('分享处理失败:', error);
+        this.showErrorMessage('分享失败，请稍后重试');
+      }
+    },
+
+    async downloadImage(blob) {
+      try {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -373,11 +401,40 @@ const RecipeGeneratorApp = {
         document.body.removeChild(link);
         
         URL.revokeObjectURL(url);
-        this.showSuccessMessage('食谱图片已下载到本地！');
+        this.showSuccessMessage('📥 食谱图片已下载到本地！');
         
       } catch (error) {
-        console.error('分享处理失败:', error);
-        this.showErrorMessage('分享失败，请稍后重试');
+        console.error('下载失败:', error);
+        this.showErrorMessage('下载失败，请稍后重试');
+      }
+    },
+
+    async systemShare(blob) {
+      try {
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], `食谱_${Date.now()}.png`, { type: 'image/png' });
+          
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: '🍳 我的智能食谱',
+              text: `${this.recipeResult.recipe_name || '美味食谱'} - 用AI生成的美味食谱！`,
+              files: [file]
+            });
+            
+            this.showSuccessMessage('📤 分享成功！');
+            return;
+          }
+        }
+        
+        // 如果系统分享不可用，降级到下载
+        await this.downloadImage(blob);
+        
+      } catch (error) {
+        if (error.name !== 'AbortError') { // 用户取消分享不算错误
+          console.error('系统分享失败:', error);
+          this.showErrorMessage('系统分享失败，已改为下载到本地');
+          await this.downloadImage(blob);
+        }
       }
     },
     

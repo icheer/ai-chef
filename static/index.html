@@ -207,101 +207,90 @@
 
     <!-- 食谱展示区域 -->
     <section v-if="showResult" class="recipe-result">
-      <div class="recipe-container">
-        <!-- 食谱概要 -->
-        <header class="recipe-header">
-          <h2 class="recipe-title">{{ recipeResult.recipe_name || '美味食谱' }}</h2>
-          <div class="recipe-meta">
-            <span class="time">⏱️ {{ recipeResult.cooking_time || 30 }}分钟</span>
-            <span class="difficulty">📊 {{ recipeResult.difficulty || '简单' }}</span>
-            <span class="servings">👥 {{ recipeResult.serving_size || userProfile.serving_size }}人份</span>
-            <span v-if="recipeResult.cuisine_style" class="cuisine">🍽️ {{ recipeResult.cuisine_style }}</span>
+      <!-- 食谱概要 -->
+      <header class="recipe-header">
+        <h2 class="recipe-title">{{ recipeResult.recipe_name || '美味食谱' }}</h2>
+        <div class="recipe-meta">
+          <span class="time">⏱️ {{ recipeResult.cooking_time || 30 }}分钟</span>
+          <span class="difficulty">📊 {{ recipeResult.difficulty || '简单' }}</span>
+          <span class="servings">👥 {{ recipeResult.serving_size || userProfile.serving_size }}人份</span>
+          <span v-if="recipeResult.cuisine_style" class="cuisine">🍽️ {{ recipeResult.cuisine_style }}</span>
+        </div>
+        <p class="recipe-description">{{ recipeResult.description || '一道美味的家常菜' }}</p>
+        
+        <!-- 操作按钮 -->
+        <div class="recipe-actions">
+          <button @click="shareRecipe" class="btn-secondary">📤 分享食谱</button>
+          <button @click="generateNewRecipe" class="btn-secondary">🔄 重新生成</button>
+        </div>
+      </header>
+
+      <!-- 营养信息 -->
+      <div v-if="recipeResult.nutrition_info" class="nutrition-section">
+        <h3>📊 营养信息</h3>
+        <div class="nutrition-grid">
+          <div class="nutrition-item">
+            <span class="label">热量</span>
+            <span class="value">{{ recipeResult.nutrition_info.calories_per_serving || 'N/A' }}</span>
           </div>
-          <p class="description">{{ recipeResult.description || '一道美味的家常菜' }}</p>
-        </header>
+          <div class="nutrition-item">
+            <span class="label">蛋白质</span>
+            <span class="value">{{ recipeResult.nutrition_info.protein || 'N/A' }}</span>
+          </div>
+          <div class="nutrition-item">
+            <span class="label">碳水</span>
+            <span class="value">{{ recipeResult.nutrition_info.carbs || 'N/A' }}</span>
+          </div>
+          <div class="nutrition-item">
+            <span class="label">脂肪</span>
+            <span class="value">{{ recipeResult.nutrition_info.fats || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
 
-        <!-- 营养信息 -->
-        <section v-if="recipeResult.nutrition_info" class="nutrition">
-          <h3>📊 营养信息</h3>
-          <div class="nutrition-grid">
-            <div class="nutrition-item">
-              <span class="label">热量</span>
-              <span class="value">{{ recipeResult.nutrition_info.calories_per_serving || 'N/A' }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="label">蛋白质</span>
-              <span class="value">{{ recipeResult.nutrition_info.protein || 'N/A' }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="label">碳水化合物</span>
-              <span class="value">{{ recipeResult.nutrition_info.carbs || 'N/A' }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="label">脂肪</span>
-              <span class="value">{{ recipeResult.nutrition_info.fats || 'N/A' }}</span>
+      <!-- 所需食材 -->
+      <div v-if="recipeResult.ingredients" class="ingredients-section">
+        <h3>🛒 所需食材</h3>
+        <ul class="ingredients-list">
+          <li v-for="ingredient in recipeResult.ingredients" :key="ingredient.name" class="ingredient-row">
+            <span class="ingredient-amount">{{ ingredient.quantity || ingredient.amount }} {{ ingredient.unit }}</span>
+            <span class="ingredient-name">{{ ingredient.name }}</span>
+            <span v-if="ingredient.notes || ingredient.role" class="ingredient-notes">({{ ingredient.notes || ingredient.role }})</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 烹饪步骤 -->
+      <div v-if="recipeResult.cooking_steps" class="cooking-steps-section">
+        <h3>👨‍🍳 烹饪步骤</h3>
+        <div class="steps-container">
+          <div v-for="(step, index) in recipeResult.cooking_steps" 
+               :key="index" class="cooking-step">
+            <div class="step-number">{{ step.step || (index + 1) }}</div>
+            <div class="step-content">
+              <h4 v-if="step.action" class="step-title">{{ step.action }}</h4>
+              <p class="step-instruction">{{ step.description || step.instruction }}</p>
+              <p v-if="step.time" class="step-time">⏱️ {{ step.time }}</p>
+              <p v-if="step.tips" class="step-tip">💡 {{ step.tips }}</p>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <!-- 所需食材 -->
-        <section v-if="recipeResult.ingredients" class="recipe-ingredients">
-          <h3>🛒 所需食材</h3>
-          <ul class="ingredients-list">
-            <li v-for="ingredient in recipeResult.ingredients" :key="ingredient.name">
-              <span class="amount">{{ ingredient.quantity || ingredient.amount }} {{ ingredient.unit }}</span>
-              <span class="name">{{ ingredient.name }}</span>
-              <span v-if="ingredient.notes || ingredient.role" class="notes">({{ ingredient.notes || ingredient.role }})</span>
-            </li>
-          </ul>
-        </section>
+      <!-- 厨师小贴士 -->
+      <div v-if="recipeResult.chef_tips && recipeResult.chef_tips.length > 0" class="tips-section">
+        <h3>👨‍🍳 厨师小贴士</h3>
+        <ul class="tips-list">
+          <li v-for="tip in recipeResult.chef_tips" :key="tip">{{ tip }}</li>
+        </ul>
+      </div>
 
-        <!-- 烹饪步骤 -->
-        <section v-if="recipeResult.cooking_steps" class="cooking-steps">
-          <h3>👨‍🍳 烹饪步骤</h3>
-          <div class="steps-container">
-            <div v-for="(step, index) in recipeResult.cooking_steps" 
-                 :key="index" class="step">
-              <div class="step-number">{{ step.step || (index + 1) }}</div>
-              <div class="step-content">
-                <h4 v-if="step.action" class="step-title">{{ step.action }}</h4>
-                <p class="instruction">{{ step.description || step.instruction }}</p>
-                <p v-if="step.time" class="time">⏱️ {{ step.time }}</p>
-                <p v-if="step.tips" class="tip">💡 {{ step.tips }}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 厨师小贴士 -->
-        <section v-if="recipeResult.chef_tips && recipeResult.chef_tips.length > 0" class="chef-tips">
-          <h3>👨‍🍳 厨师小贴士</h3>
-          <ul>
-            <li v-for="tip in recipeResult.chef_tips" :key="tip">{{ tip }}</li>
-          </ul>
-        </section>
-
-        <!-- 变化建议 -->
-        <section v-if="recipeResult.variations && recipeResult.variations.length > 0" class="variations">
-          <h3>🔄 变化建议</h3>
-          <ul>
-            <li v-for="variation in recipeResult.variations" :key="variation">{{ variation }}</li>
-          </ul>
-        </section>
-
-        <!-- 食谱操作按钮 -->
-        <section class="recipe-actions">
-          <button @click="shareRecipe" class="btn-secondary">
-            📤 分享食谱
-          </button>
-          
-          <button @click="generateNewRecipe" class="btn-secondary">
-            🔄 重新生成
-          </button>
-          
-          <button @click="clearResult" class="btn-danger">
-            🗑️ 清除结果
-          </button>
-        </section>
+      <!-- 变化建议 -->
+      <div v-if="recipeResult.variations && recipeResult.variations.length > 0" class="variations-section">
+        <h3>🔄 变化建议</h3>
+        <ul class="variations-list">
+          <li v-for="variation in recipeResult.variations" :key="variation">{{ variation }}</li>
+        </ul>
       </div>
     </section>
   </div>

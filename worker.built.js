@@ -209,101 +209,90 @@ const staticFiles = {
 
     <!-- 食谱展示区域 -->
     <section v-if="showResult" class="recipe-result">
-      <div class="recipe-container">
-        <!-- 食谱概要 -->
-        <header class="recipe-header">
-          <h2 class="recipe-title">{{ recipeResult.recipe_name || '美味食谱' }}</h2>
-          <div class="recipe-meta">
-            <span class="time">⏱️ {{ recipeResult.cooking_time || 30 }}分钟</span>
-            <span class="difficulty">📊 {{ recipeResult.difficulty || '简单' }}</span>
-            <span class="servings">👥 {{ recipeResult.serving_size || userProfile.serving_size }}人份</span>
-            <span v-if="recipeResult.cuisine_style" class="cuisine">🍽️ {{ recipeResult.cuisine_style }}</span>
+      <!-- 食谱概要 -->
+      <header class="recipe-header">
+        <h2 class="recipe-title">{{ recipeResult.recipe_name || '美味食谱' }}</h2>
+        <div class="recipe-meta">
+          <span class="time">⏱️ {{ recipeResult.cooking_time || 30 }}分钟</span>
+          <span class="difficulty">📊 {{ recipeResult.difficulty || '简单' }}</span>
+          <span class="servings">👥 {{ recipeResult.serving_size || userProfile.serving_size }}人份</span>
+          <span v-if="recipeResult.cuisine_style" class="cuisine">🍽️ {{ recipeResult.cuisine_style }}</span>
+        </div>
+        <p class="recipe-description">{{ recipeResult.description || '一道美味的家常菜' }}</p>
+        
+        <!-- 操作按钮 -->
+        <div class="recipe-actions">
+          <button @click="shareRecipe" class="btn-secondary">📤 分享食谱</button>
+          <button @click="generateNewRecipe" class="btn-secondary">🔄 重新生成</button>
+        </div>
+      </header>
+
+      <!-- 营养信息 -->
+      <div v-if="recipeResult.nutrition_info" class="nutrition-section">
+        <h3>📊 营养信息</h3>
+        <div class="nutrition-grid">
+          <div class="nutrition-item">
+            <span class="label">热量</span>
+            <span class="value">{{ recipeResult.nutrition_info.calories_per_serving || 'N/A' }}</span>
           </div>
-          <p class="description">{{ recipeResult.description || '一道美味的家常菜' }}</p>
-        </header>
+          <div class="nutrition-item">
+            <span class="label">蛋白质</span>
+            <span class="value">{{ recipeResult.nutrition_info.protein || 'N/A' }}</span>
+          </div>
+          <div class="nutrition-item">
+            <span class="label">碳水</span>
+            <span class="value">{{ recipeResult.nutrition_info.carbs || 'N/A' }}</span>
+          </div>
+          <div class="nutrition-item">
+            <span class="label">脂肪</span>
+            <span class="value">{{ recipeResult.nutrition_info.fats || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
 
-        <!-- 营养信息 -->
-        <section v-if="recipeResult.nutrition_info" class="nutrition">
-          <h3>📊 营养信息</h3>
-          <div class="nutrition-grid">
-            <div class="nutrition-item">
-              <span class="label">热量</span>
-              <span class="value">{{ recipeResult.nutrition_info.calories_per_serving || 'N/A' }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="label">蛋白质</span>
-              <span class="value">{{ recipeResult.nutrition_info.protein || 'N/A' }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="label">碳水化合物</span>
-              <span class="value">{{ recipeResult.nutrition_info.carbs || 'N/A' }}</span>
-            </div>
-            <div class="nutrition-item">
-              <span class="label">脂肪</span>
-              <span class="value">{{ recipeResult.nutrition_info.fats || 'N/A' }}</span>
+      <!-- 所需食材 -->
+      <div v-if="recipeResult.ingredients" class="ingredients-section">
+        <h3>🛒 所需食材</h3>
+        <ul class="ingredients-list">
+          <li v-for="ingredient in recipeResult.ingredients" :key="ingredient.name" class="ingredient-row">
+            <span class="ingredient-amount">{{ ingredient.quantity || ingredient.amount }} {{ ingredient.unit }}</span>
+            <span class="ingredient-name">{{ ingredient.name }}</span>
+            <span v-if="ingredient.notes || ingredient.role" class="ingredient-notes">({{ ingredient.notes || ingredient.role }})</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 烹饪步骤 -->
+      <div v-if="recipeResult.cooking_steps" class="cooking-steps-section">
+        <h3>👨‍🍳 烹饪步骤</h3>
+        <div class="steps-container">
+          <div v-for="(step, index) in recipeResult.cooking_steps" 
+               :key="index" class="cooking-step">
+            <div class="step-number">{{ step.step || (index + 1) }}</div>
+            <div class="step-content">
+              <h4 v-if="step.action" class="step-title">{{ step.action }}</h4>
+              <p class="step-instruction">{{ step.description || step.instruction }}</p>
+              <p v-if="step.time" class="step-time">⏱️ {{ step.time }}</p>
+              <p v-if="step.tips" class="step-tip">💡 {{ step.tips }}</p>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <!-- 所需食材 -->
-        <section v-if="recipeResult.ingredients" class="recipe-ingredients">
-          <h3>🛒 所需食材</h3>
-          <ul class="ingredients-list">
-            <li v-for="ingredient in recipeResult.ingredients" :key="ingredient.name">
-              <span class="amount">{{ ingredient.quantity || ingredient.amount }} {{ ingredient.unit }}</span>
-              <span class="name">{{ ingredient.name }}</span>
-              <span v-if="ingredient.notes || ingredient.role" class="notes">({{ ingredient.notes || ingredient.role }})</span>
-            </li>
-          </ul>
-        </section>
+      <!-- 厨师小贴士 -->
+      <div v-if="recipeResult.chef_tips && recipeResult.chef_tips.length > 0" class="tips-section">
+        <h3>👨‍🍳 厨师小贴士</h3>
+        <ul class="tips-list">
+          <li v-for="tip in recipeResult.chef_tips" :key="tip">{{ tip }}</li>
+        </ul>
+      </div>
 
-        <!-- 烹饪步骤 -->
-        <section v-if="recipeResult.cooking_steps" class="cooking-steps">
-          <h3>👨‍🍳 烹饪步骤</h3>
-          <div class="steps-container">
-            <div v-for="(step, index) in recipeResult.cooking_steps" 
-                 :key="index" class="step">
-              <div class="step-number">{{ step.step || (index + 1) }}</div>
-              <div class="step-content">
-                <h4 v-if="step.action" class="step-title">{{ step.action }}</h4>
-                <p class="instruction">{{ step.description || step.instruction }}</p>
-                <p v-if="step.time" class="time">⏱️ {{ step.time }}</p>
-                <p v-if="step.tips" class="tip">💡 {{ step.tips }}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 厨师小贴士 -->
-        <section v-if="recipeResult.chef_tips && recipeResult.chef_tips.length > 0" class="chef-tips">
-          <h3>👨‍🍳 厨师小贴士</h3>
-          <ul>
-            <li v-for="tip in recipeResult.chef_tips" :key="tip">{{ tip }}</li>
-          </ul>
-        </section>
-
-        <!-- 变化建议 -->
-        <section v-if="recipeResult.variations && recipeResult.variations.length > 0" class="variations">
-          <h3>🔄 变化建议</h3>
-          <ul>
-            <li v-for="variation in recipeResult.variations" :key="variation">{{ variation }}</li>
-          </ul>
-        </section>
-
-        <!-- 食谱操作按钮 -->
-        <section class="recipe-actions">
-          <button @click="shareRecipe" class="btn-secondary">
-            📤 分享食谱
-          </button>
-          
-          <button @click="generateNewRecipe" class="btn-secondary">
-            🔄 重新生成
-          </button>
-          
-          <button @click="clearResult" class="btn-danger">
-            🗑️ 清除结果
-          </button>
-        </section>
+      <!-- 变化建议 -->
+      <div v-if="recipeResult.variations && recipeResult.variations.length > 0" class="variations-section">
+        <h3>🔄 变化建议</h3>
+        <ul class="variations-list">
+          <li v-for="variation in recipeResult.variations" :key="variation">{{ variation }}</li>
+        </ul>
       </div>
     </section>
   </div>
@@ -956,49 +945,258 @@ button:disabled::before {
 /* 食谱展示区域 */
 .recipe-result {
   margin-top: 2rem;
-}
-
-.recipe-container {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: var(--shadow-medium);
-  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(224, 230, 237, 0.8);
+  overflow: hidden;
 }
 
 .recipe-header {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark));
+  color: white;
+  padding: 2.5rem 2rem;
   text-align: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.recipe-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.recipe-header > * {
+  position: relative;
+  z-index: 1;
 }
 
 .recipe-title {
-  color: var(--primary-color);
-  font-size: 1.8rem;
+  font-size: 2.2rem;
+  font-weight: 700;
   margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .recipe-meta {
   display: flex;
   justify-content: center;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
 .recipe-meta span {
-  background: var(--light-gray);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 0.6rem 1.2rem;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.description {
+.recipe-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.recipe-actions button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 0.8rem 1.5rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.recipe-actions button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.recipe-content {
+  padding: 2rem;
+}
+
+.recipe-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #fafbfc;
+  border-radius: 12px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.recipe-section:last-child {
+  margin-bottom: 0;
+}
+
+.recipe-section h3 {
+  color: var(--primary-color);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recipe-section h3::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--primary-color);
+  border-radius: 50%;
+}
+
+.recipe-description p {
   color: var(--text-secondary);
-  font-style: italic;
-  line-height: 1.5;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+/* 营养信息网格 */
+.nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.nutrition-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #e1e5e9;
+  transition: transform 0.2s ease;
+}
+
+.nutrition-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.nutrition-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.3rem;
+}
+
+.nutrition-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* 食材清单 */
+.ingredients-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.ingredient-item {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+  transition: all 0.2s ease;
+}
+
+.ingredient-item:hover {
+  border-color: var(--primary-color);
+  transform: translateX(5px);
+}
+
+.ingredient-item::before {
+  content: '✓';
+  background: var(--primary-color);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 0.8rem;
+  flex-shrink: 0;
+}
+
+.ingredient-name {
+  font-weight: 500;
+  color: var(--text-color);
+  flex: 1;
+}
+
+.ingredient-amount {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* 制作步骤 */
+.steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+}
+
+.step-item {
+  display: flex;
+  margin-bottom: 1.5rem;
+  align-items: flex-start;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e1e5e9;
+  transition: all 0.3s ease;
+}
+
+.step-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.step-number {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark));
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-right: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(52, 168, 83, 0.3);
+}
+
+.step-content {
+  flex: 1;
+  line-height: 1.6;
+  color: var(--text-color);
 }
 
 /* 营养信息 */
@@ -1561,6 +1759,124 @@ section:nth-child(even) {
   }
 }
 
+/* 食谱响应式样式 */
+@media (min-width: 1200px) {
+  .recipe-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .recipe-description,
+  .nutrition-section {
+    grid-column: 1 / -1;
+  }
+  
+  .ingredients-section {
+    grid-column: 1;
+  }
+  
+  .cooking-steps-section {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 1199px) {
+  .recipe-content {
+    display: block;
+  }
+  
+  .recipe-section {
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .recipe-result {
+    margin: 1rem 0;
+    border-radius: 12px;
+  }
+  
+  .recipe-header {
+    padding: 1.5rem 1rem;
+  }
+  
+  .recipe-title {
+    font-size: 1.8rem;
+  }
+  
+  .recipe-content {
+    padding: 1rem;
+  }
+  
+  .recipe-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .recipe-meta {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .recipe-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .recipe-actions button {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .nutrition-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 分享弹窗样式 */
+.swal2-popup.share-popup {
+  border-radius: 16px !important;
+}
+
+.swal2-popup.share-popup .swal2-html-container {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.swal2-popup.share-popup img {
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.swal2-popup.share-popup img:hover {
+  transform: scale(1.02);
+}
+
+/* 移动端分享弹窗优化 */
+@media (max-width: 767px) {
+  .swal2-popup.share-popup {
+    width: 95% !important;
+    margin: 10px !important;
+  }
+  
+  .swal2-popup.share-popup img {
+    max-height: 300px !important;
+  }
+  
+  .swal2-popup.share-popup .swal2-actions {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .swal2-popup.share-popup .swal2-confirm,
+  .swal2-popup.share-popup .swal2-cancel {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+
 /* 打印样式 */
 @media print {
   #app {
@@ -1926,27 +2242,55 @@ const RecipeGeneratorApp = {
     
     async handleShareBlob(blob) {
       try {
-        // 关闭Loading提示
-        Swal.close();
+        // 创建图片URL用于在弹窗中显示
+        const imageUrl = URL.createObjectURL(blob);
         
-        // 检查是否支持Web Share API
-        if (navigator.share && navigator.canShare) {
-          const file = new File([blob], \`食谱_\${Date.now()}.png\`, { type: 'image/png' });
-          
-          if (navigator.canShare({ files: [file] })) {
-            // 移动端：使用Web Share API
-            await navigator.share({
-              title: '我的智能食谱',
-              text: \`\${this.recipeResult.recipe_name || '美味食谱'} - 用AI生成的美味食谱！\`,
-              files: [file]
-            });
-            
-            this.showSuccessMessage('分享成功！');
-            return;
+        // 关闭Loading提示，显示截图预览弹窗
+        await Swal.fire({
+          title: '📱 食谱分享图片',
+          html: \`
+            <div style="text-align: center; margin: 20px 0;">
+              <img src="\${imageUrl}" 
+                   style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" 
+                   alt="食谱截图">
+              <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                📱 <strong>移动端用户：</strong>长按图片保存到相册<br>
+                💻 <strong>电脑用户：</strong>右键保存图片或点击下载按钮
+              </p>
+            </div>
+          \`,
+          width: 600,
+          padding: '20px',
+          showCancelButton: true,
+          confirmButtonText: '💾 直接下载',
+          cancelButtonText: navigator.share ? '📤 系统分享' : '❌ 关闭',
+          showCloseButton: true,
+          customClass: {
+            popup: 'share-popup',
+            image: 'share-image'
+          },
+          willClose: () => {
+            // 清理图片URL
+            URL.revokeObjectURL(imageUrl);
           }
-        }
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            // 用户选择直接下载
+            await this.downloadImage(blob);
+          } else if (result.dismiss === Swal.DismissReason.cancel && navigator.share) {
+            // 用户选择系统分享（仅在支持时显示此按钮）
+            await this.systemShare(blob);
+          }
+        });
         
-        // 降级方案：下载图片
+      } catch (error) {
+        console.error('分享处理失败:', error);
+        this.showErrorMessage('分享失败，请稍后重试');
+      }
+    },
+
+    async downloadImage(blob) {
+      try {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -1957,11 +2301,40 @@ const RecipeGeneratorApp = {
         document.body.removeChild(link);
         
         URL.revokeObjectURL(url);
-        this.showSuccessMessage('食谱图片已下载到本地！');
+        this.showSuccessMessage('📥 食谱图片已下载到本地！');
         
       } catch (error) {
-        console.error('分享处理失败:', error);
-        this.showErrorMessage('分享失败，请稍后重试');
+        console.error('下载失败:', error);
+        this.showErrorMessage('下载失败，请稍后重试');
+      }
+    },
+
+    async systemShare(blob) {
+      try {
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], \`食谱_\${Date.now()}.png\`, { type: 'image/png' });
+          
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: '🍳 我的智能食谱',
+              text: \`\${this.recipeResult.recipe_name || '美味食谱'} - 用AI生成的美味食谱！\`,
+              files: [file]
+            });
+            
+            this.showSuccessMessage('📤 分享成功！');
+            return;
+          }
+        }
+        
+        // 如果系统分享不可用，降级到下载
+        await this.downloadImage(blob);
+        
+      } catch (error) {
+        if (error.name !== 'AbortError') { // 用户取消分享不算错误
+          console.error('系统分享失败:', error);
+          this.showErrorMessage('系统分享失败，已改为下载到本地');
+          await this.downloadImage(blob);
+        }
       }
     },
     
@@ -2054,7 +2427,7 @@ createApp(RecipeGeneratorApp).mount('#app');
 `
 };
 
-export default {
+export default { 
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
