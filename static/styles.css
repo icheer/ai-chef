@@ -177,6 +177,7 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
   -webkit-user-select: none;
   user-select: none;
 }
+.swal2-popup.share-popup .swal2-close { position: relative; }
 
 /* ========== 13. 响应式（移动优先） ========== */
 @media (max-width: 767px) {
