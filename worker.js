@@ -134,7 +134,9 @@ function getContentType(pathname) {
 
 // Gemini API密钥负载均衡
 function getRandomApiKey(env) {
-  const apiKeys = env.GEMINI_API_KEYS.split(',').map(key => key.trim());
+  const apiKeys = env.GEMINI_API_KEYS.split(',')
+    .map(key => key.trim())
+    .filter(key => key);
   const randomIndex = Math.floor(Math.random() * apiKeys.length);
   return apiKeys[randomIndex];
 }
@@ -188,15 +190,18 @@ function buildRecipePrompt(requestData) {
       time_available: requestData.userProfile.time_available,
       cuisine_preferences: requestData.userProfile.cuisine_preferences,
       dietary_restrictions: {
-        allergies: requestData.dietaryRestrictions.allergies
+        allergies: (requestData.dietaryRestrictions.allergies || '')
+          .replace(/，/g, ',')
           .split(',')
           .map(s => s.trim())
           .filter(s => s),
-        intolerances: requestData.dietaryRestrictions.intolerances
+        intolerances: (requestData.dietaryRestrictions.intolerances || '')
+          .replace(/，/g, ',')
           .split(',')
           .map(s => s.trim())
           .filter(s => s),
-        dislikes: requestData.dietaryRestrictions.dislikes
+        dislikes: (requestData.dietaryRestrictions.dislikes || '')
+          .replace(/，/g, ',')
           .split(',')
           .map(s => s.trim())
           .filter(s => s),
