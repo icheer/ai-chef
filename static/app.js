@@ -102,7 +102,10 @@ const RecipeGeneratorApp = {
     // ============ 图片压缩相关配置 ============
     getShareImageConfig() {
       return {
-        maxLongSide: 1600, // 最长边像素限制（降低超长页面的分辨率）
+        // 独立控制宽高，避免超长页面因高度被强行缩到 maxLongSide 而把宽度一起压缩
+        maxWidth: 1080,     // 期望最大导出宽度（分享清晰度）
+        maxHeight: 6000,    // 允许较长的长图
+        minWidth: 600,      // 不希望最终低于的可读宽度（<600 时放弃按高度缩放）
         maxBytes: 8 * 1024 * 1024, // 最终目标最大体积（8MB，远低于 25MB 安全阈值）
         minQuality: 0.5, // JPEG 最低质量兜底
         initialQuality: 0.9, // 起始 JPEG 质量
@@ -110,13 +113,28 @@ const RecipeGeneratorApp = {
       };
     },
 
-    // 将原始 canvas 约束尺寸（最长边）
-    downscaleCanvasIfNeeded(canvas, maxLongSide) {
+    // 根据独立宽高限制缩放（避免 169x1600 这种被高度牵连的过窄宽度）
+    downscaleCanvasIfNeeded(canvas, cfg) {
+      const { maxWidth, maxHeight, minWidth } = cfg;
       const { width, height } = canvas;
-      const longSide = Math.max(width, height);
-      if (longSide <= maxLongSide) return canvas; // 不需要缩放
 
-      const scale = maxLongSide / longSide;
+      // 计算各自的缩放系数（仅在超出限制时 <1）
+      const scaleW = width > maxWidth ? maxWidth / width : 1;
+      const scaleH = height > maxHeight ? maxHeight / height : 1;
+      let scale = Math.min(scaleW, scaleH);
+
+      // 如果仅因高度过长导致 scale 过小并使得宽度会掉到 minWidth 以下，则放弃按高度缩放
+      if (scale < 1 && width * scale < minWidth) {
+        // 保留宽度可读性：只按宽度（若宽度本身超出 maxWidth）或不缩放
+        scale = scaleW; // 可能是 1 或 <1
+        if (width * scale < minWidth) {
+          // 宽度本身就很窄，不扩大（放大会失真且无更多信息）
+          return canvas;
+        }
+      }
+
+      if (scale >= 1) return canvas; // 不需要缩放
+
       const targetW = Math.round(width * scale);
       const targetH = Math.round(height * scale);
       const tmp = document.createElement('canvas');
@@ -159,13 +177,10 @@ const RecipeGeneratorApp = {
 
     // 统一导出：先按最长边缩放，再尝试 JPEG 质量压缩；若仍然过大，继续二次尺寸降采样
     async exportOptimizedImage(originalCanvas) {
-      const cfg = this.getShareImageConfig();
-      let working = this.downscaleCanvasIfNeeded(
-        originalCanvas,
-        cfg.maxLongSide
-      );
+  const cfg = this.getShareImageConfig();
+  let working = this.downscaleCanvasIfNeeded(originalCanvas, cfg);
 
-      let blob = await this.exportCanvasAsJpegUnderLimit(working, cfg);
+  let blob = await this.exportCanvasAsJpegUnderLimit(working, cfg);
       // 如果依旧超过限制，继续按 0.75 / 0.6 缩放梯度再试（极端超长页面）
       const fallbackScales = [0.75, 0.6, 0.5];
       for (const s of fallbackScales) {
@@ -480,18 +495,16 @@ const RecipeGeneratorApp = {
           throw new Error('找不到食谱内容');
         }
 
-        // 确保元素完全可见并停止所有动画
-        await this.prepareElementForCapture(recipeElement);
-
         // 等待额外的时间确保渲染完成
         this.isCapturing = true;
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // 使用html2canvas生成图片 (注意：之前 scale:2 可能导致超大尺寸，这里自适应)
         const deviceScale = window.devicePixelRatio || 1;
+        // 为了避免原始容器宽度过窄（如移动端极窄列），在克隆中可强制最小宽度
+        const minLogicalWidth = 600; // 与 cfg.minWidth 对应
         const canvas = await html2canvas(recipeElement, {
           backgroundColor: '#ffffff',
-          scale: deviceScale, // 放大倍数
+          scale: Math.min(2, deviceScale * 1.2), // 略微提升清晰度但不夸张
           useCORS: true,
           allowTaint: false,
           height: recipeElement.scrollHeight,
@@ -501,22 +514,14 @@ const RecipeGeneratorApp = {
           removeContainer: true, // 移除容器避免影响
           foreignObjectRendering: false, // 禁用外部对象渲染
           onclone: clonedDoc => {
-            // 在克隆的文档中移除所有动画和过渡
-            const clonedElement = clonedDoc.querySelector('.recipe-result');
-            if (clonedElement) {
-              clonedElement.style.animation = 'none';
-              clonedElement.style.transition = 'none';
-              clonedElement.style.transform = 'none';
-              clonedElement.style.opacity = '1';
-
-              // 移除所有子元素的动画和过渡
-              const allElements = clonedElement.querySelectorAll('*');
-              allElements.forEach(el => {
-                el.style.animation = 'none';
-                el.style.transition = 'none';
-                el.style.transform = 'none';
-                el.style.opacity = '1';
-              });
+            const el = clonedDoc.querySelector('.recipe-result');
+            if (el) {
+              const w = el.getBoundingClientRect().width;
+              if (w < minLogicalWidth) {
+                el.style.width = minLogicalWidth + 'px';
+                el.style.maxWidth = minLogicalWidth + 'px';
+                el.style.margin = '0 auto';
+              }
             }
           }
         });
@@ -540,64 +545,6 @@ const RecipeGeneratorApp = {
         console.error('分享失败:', error);
         this.showErrorMessage('分享失败，请稍后重试');
       }
-    },
-
-    // 准备元素用于截图 - 确保可见性和停止动画
-    async prepareElementForCapture(element) {
-      // 滚动到元素位置确保完全可见
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-      // 等待滚动动画完成
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // 临时移除可能影响截图的CSS属性
-      const originalStyles = new Map();
-
-      // 保存并重置动画相关样式
-      const elementsToModify = [element, ...element.querySelectorAll('*')];
-
-      elementsToModify.forEach(el => {
-        const computedStyle = window.getComputedStyle(el);
-        const originalStyle = {
-          animation: el.style.animation,
-          transition: el.style.transition,
-          transform: el.style.transform,
-          opacity: el.style.opacity,
-          visibility: el.style.visibility
-        };
-
-        originalStyles.set(el, originalStyle);
-
-        // 暂时禁用动画和过渡
-        el.style.animation = 'none';
-        el.style.transition = 'none';
-
-        // 确保元素可见
-        if (
-          computedStyle.opacity === '0' ||
-          computedStyle.visibility === 'hidden'
-        ) {
-          el.style.opacity = '1';
-          el.style.visibility = 'visible';
-        }
-      });
-
-      // 等待样式应用
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // 返回恢复函数（虽然在截图场景下可能不需要）
-      return () => {
-        elementsToModify.forEach(el => {
-          const original = originalStyles.get(el);
-          if (original) {
-            el.style.animation = original.animation;
-            el.style.transition = original.transition;
-            el.style.transform = original.transform;
-            el.style.opacity = original.opacity;
-            el.style.visibility = original.visibility;
-          }
-        });
-      };
     },
 
     async handleShareBlob(blob, meta = {}) {
