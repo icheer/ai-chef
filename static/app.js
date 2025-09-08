@@ -99,104 +99,68 @@ const RecipeGeneratorApp = {
   },
 
   methods: {
-    // ============ 图片压缩相关配置 ============
-    getShareImageConfig() {
-      return {
-        // 独立控制宽高，避免超长页面因高度被强行缩到 maxLongSide 而把宽度一起压缩
-        maxWidth: 1080,     // 期望最大导出宽度（分享清晰度）
-        maxHeight: 6000,    // 允许较长的长图
-        minWidth: 600,      // 不希望最终低于的可读宽度（<600 时放弃按高度缩放）
-        maxBytes: 8 * 1024 * 1024, // 最终目标最大体积（8MB，远低于 25MB 安全阈值）
-        minQuality: 0.5, // JPEG 最低质量兜底
-        initialQuality: 0.9, // 起始 JPEG 质量
-        qualityStep: 0.1 // 每次降低步长
-      };
-    },
-
-    // 根据独立宽高限制缩放（避免 169x1600 这种被高度牵连的过窄宽度）
-    downscaleCanvasIfNeeded(canvas, cfg) {
-      const { maxWidth, maxHeight, minWidth } = cfg;
-      const { width, height } = canvas;
-
-      // 计算各自的缩放系数（仅在超出限制时 <1）
-      const scaleW = width > maxWidth ? maxWidth / width : 1;
-      const scaleH = height > maxHeight ? maxHeight / height : 1;
-      let scale = Math.min(scaleW, scaleH);
-
-      // 如果仅因高度过长导致 scale 过小并使得宽度会掉到 minWidth 以下，则放弃按高度缩放
-      if (scale < 1 && width * scale < minWidth) {
-        // 保留宽度可读性：只按宽度（若宽度本身超出 maxWidth）或不缩放
-        scale = scaleW; // 可能是 1 或 <1
-        if (width * scale < minWidth) {
-          // 宽度本身就很窄，不扩大（放大会失真且无更多信息）
-          return canvas;
-        }
-      }
-
-      if (scale >= 1) return canvas; // 不需要缩放
-
-      const targetW = Math.round(width * scale);
-      const targetH = Math.round(height * scale);
-      const tmp = document.createElement('canvas');
-      tmp.width = targetW;
-      tmp.height = targetH;
-      const ctx = tmp.getContext('2d');
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(canvas, 0, 0, targetW, targetH);
-      return tmp;
-    },
-
-    // 以不同 JPEG 质量尝试导出，直到满足大小或降到最小质量
-    async exportCanvasAsJpegUnderLimit(
-      canvas,
-      { maxBytes, initialQuality, minQuality, qualityStep }
-    ) {
-      let q = initialQuality;
-      while (q >= minQuality) {
-        const blob = await this.canvasToBlob(canvas, 'image/jpeg', q);
-        if (blob && blob.size <= maxBytes) {
-          return blob;
-        }
-        q = parseFloat((q - qualityStep).toFixed(2));
-      }
-      // 最终兜底：返回最低质量版本（不再校验大小）
-      return await this.canvasToBlob(
-        canvas,
-        'image/jpeg',
-        Math.max(minQuality, 0.4)
-      );
-    },
-
-    // Canvas 转 Blob Promise 包装
-    canvasToBlob(canvas, mime = 'image/jpeg', quality = 0.85) {
-      return new Promise(resolve => {
-        canvas.toBlob(blob => resolve(blob), mime, quality);
+    // ======= 简化截图实现（参考 guide 页面写法，提升稳定性） =======
+    async captureRecipeCanvas(element) {
+      // 确保渲染结束
+      await this.$nextTick();
+      // 滚动到视图内
+      element.scrollIntoView({ behavior: 'auto', block: 'start' });
+      await new Promise(r => setTimeout(r, 50));
+      const width = Math.ceil(element.scrollWidth);
+      const height = Math.ceil(element.scrollHeight);
+      const scale = Math.min(2, window.devicePixelRatio || 1); // 最高 2 倍
+      return await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale,
+        useCORS: true,
+        allowTaint: false,
+        width,
+        height,
+        windowWidth: width,
+        windowHeight: height,
+        logging: false
       });
     },
 
-    // 统一导出：先按最长边缩放，再尝试 JPEG 质量压缩；若仍然过大，继续二次尺寸降采样
-    async exportOptimizedImage(originalCanvas) {
-  const cfg = this.getShareImageConfig();
-  let working = this.downscaleCanvasIfNeeded(originalCanvas, cfg);
+    // 简化压缩：优先质量压缩，必要时逐步等比缩小
+    async compressCanvas(canvas) {
+      const MAX_BYTES = 6 * 1024 * 1024; // 目标 6MB 上限
+      const MIN_WIDTH = 600; // 最低可接受宽度
+      const QUALITY_STEPS = [0.92, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55];
 
-  let blob = await this.exportCanvasAsJpegUnderLimit(working, cfg);
-      // 如果依旧超过限制，继续按 0.75 / 0.6 缩放梯度再试（极端超长页面）
-      const fallbackScales = [0.75, 0.6, 0.5];
-      for (const s of fallbackScales) {
-        if (blob.size <= cfg.maxBytes) break;
-        const scaled = document.createElement('canvas');
-        scaled.width = Math.round(working.width * s);
-        scaled.height = Math.round(working.height * s);
-        const ctx = scaled.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(working, 0, 0, scaled.width, scaled.height);
-        working = scaled;
-        blob = await this.exportCanvasAsJpegUnderLimit(working, cfg);
+      const toBlob = (cv, q) =>
+        new Promise(res => cv.toBlob(b => res(b), 'image/jpeg', q));
+
+      let blob;
+      for (const q of QUALITY_STEPS) {
+        blob = await toBlob(canvas, q);
+        if (!blob) continue;
+        if (blob.size <= MAX_BYTES)
+          return { blob, finalWidth: canvas.width, finalHeight: canvas.height };
       }
 
-      return { blob, finalWidth: working.width, finalHeight: working.height };
+      // 若质量压缩仍超限，开始缩放
+      let work = canvas;
+      let scaleFactor = 0.85;
+      while (
+        blob &&
+        blob.size > MAX_BYTES &&
+        work.width * scaleFactor >= MIN_WIDTH
+      ) {
+        const targetW = Math.round(work.width * scaleFactor);
+        const targetH = Math.round(work.height * scaleFactor);
+        const cv = document.createElement('canvas');
+        cv.width = targetW;
+        cv.height = targetH;
+        const ctx = cv.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(work, 0, 0, targetW, targetH);
+        work = cv;
+        // 使用中间偏低质量再试
+        blob = await toBlob(work, 0.7);
+      }
+      return { blob, finalWidth: work.width, finalHeight: work.height };
     },
 
     // 食材管理方法
@@ -495,40 +459,13 @@ const RecipeGeneratorApp = {
           throw new Error('找不到食谱内容');
         }
 
-        // 等待额外的时间确保渲染完成
         this.isCapturing = true;
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const deviceScale = window.devicePixelRatio || 1;
-        // 为了避免原始容器宽度过窄（如移动端极窄列），在克隆中可强制最小宽度
-        const minLogicalWidth = 600; // 与 cfg.minWidth 对应
-        const canvas = await html2canvas(recipeElement, {
-          backgroundColor: '#ffffff',
-          scale: Math.min(2, deviceScale * 1.2), // 略微提升清晰度但不夸张
-          useCORS: true,
-          allowTaint: false,
-          height: recipeElement.scrollHeight,
-          windowHeight: recipeElement.scrollHeight,
-          logging: false, // 关闭日志避免控制台输出
-          imageTimeout: 15000, // 增加图片加载超时时间
-          removeContainer: true, // 移除容器避免影响
-          foreignObjectRendering: false, // 禁用外部对象渲染
-          onclone: clonedDoc => {
-            const el = clonedDoc.querySelector('.recipe-result');
-            if (el) {
-              const w = el.getBoundingClientRect().width;
-              if (w < minLogicalWidth) {
-                el.style.width = minLogicalWidth + 'px';
-                el.style.maxWidth = minLogicalWidth + 'px';
-                el.style.margin = '0 auto';
-              }
-            }
-          }
-        });
+        const canvas = await this.captureRecipeCanvas(recipeElement);
         this.isCapturing = false;
-        // 压缩 & 导出优化图片（JPEG 优化体积）
-        const { blob, finalWidth, finalHeight } =
-          await this.exportOptimizedImage(canvas);
+
+        const { blob, finalWidth, finalHeight } = await this.compressCanvas(
+          canvas
+        );
         console.log(
           '[ShareImage] 导出尺寸:',
           `${finalWidth}x${finalHeight}`,
