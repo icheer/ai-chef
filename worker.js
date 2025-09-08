@@ -194,17 +194,17 @@ function buildRecipePrompt(requestData) {
       cuisine_preferences: requestData.userProfile.cuisine_preferences,
       dietary_restrictions: {
         allergies: (requestData.dietaryRestrictions.allergies || '')
-          .replace(/，/g, ',')
+          .replace(/(，|、|；|;)/g, ',')
           .split(',')
           .map(s => s.trim())
           .filter(s => s),
         intolerances: (requestData.dietaryRestrictions.intolerances || '')
-          .replace(/，/g, ',')
+          .replace(/(，|、|；|;)/g, ',')
           .split(',')
           .map(s => s.trim())
           .filter(s => s),
         dislikes: (requestData.dietaryRestrictions.dislikes || '')
-          .replace(/，/g, ',')
+          .replace(/(，|、|；|;)/g, ',')
           .split(',')
           .map(s => s.trim())
           .filter(s => s),
