@@ -122,47 +122,6 @@ const RecipeGeneratorApp = {
       });
     },
 
-    // 简化压缩：优先质量压缩，必要时逐步等比缩小
-    async compressCanvas(canvas) {
-      const MAX_BYTES = 6 * 1024 * 1024; // 目标 6MB 上限
-      const MIN_WIDTH = 600; // 最低可接受宽度
-      const QUALITY_STEPS = [0.92, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55];
-
-      const toBlob = (cv, q) =>
-        new Promise(res => cv.toBlob(b => res(b), 'image/jpeg', q));
-
-      let blob;
-      for (const q of QUALITY_STEPS) {
-        blob = await toBlob(canvas, q);
-        if (!blob) continue;
-        if (blob.size <= MAX_BYTES)
-          return { blob, finalWidth: canvas.width, finalHeight: canvas.height };
-      }
-
-      // 若质量压缩仍超限，开始缩放
-      let work = canvas;
-      let scaleFactor = 0.85;
-      while (
-        blob &&
-        blob.size > MAX_BYTES &&
-        work.width * scaleFactor >= MIN_WIDTH
-      ) {
-        const targetW = Math.round(work.width * scaleFactor);
-        const targetH = Math.round(work.height * scaleFactor);
-        const cv = document.createElement('canvas');
-        cv.width = targetW;
-        cv.height = targetH;
-        const ctx = cv.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(work, 0, 0, targetW, targetH);
-        work = cv;
-        // 使用中间偏低质量再试
-        blob = await toBlob(work, 0.7);
-      }
-      return { blob, finalWidth: work.width, finalHeight: work.height };
-    },
-
     // 食材管理方法
     addIngredient(name, category = '其他') {
       const existing = this.selectedIngredients.find(
@@ -462,67 +421,42 @@ const RecipeGeneratorApp = {
         this.isCapturing = true;
         const canvas = await this.captureRecipeCanvas(recipeElement);
         this.isCapturing = false;
-
-        const { blob, finalWidth, finalHeight } = await this.compressCanvas(
-          canvas
-        );
-        console.log(
-          '[ShareImage] 导出尺寸:',
-          `${finalWidth}x${finalHeight}`,
-          '大小:',
-          (blob.size / 1024).toFixed(1) + 'KB',
-          '类型:',
-          blob.type
-        );
-        await this.handleShareBlob(blob, {
-          width: finalWidth,
-          height: finalHeight
-        });
+        await this.handleShare(canvas);
       } catch (error) {
         console.error('分享失败:', error);
         this.showErrorMessage('分享失败，请稍后重试');
       }
     },
 
-    async handleShareBlob(blob, meta = {}) {
+    // dataURL + Blob 双轨：img 用 dataURL，分享/下载可复用 blob
+    async handleShare(canvas) {
       try {
-        // 创建图片URL用于在弹窗中显示
-        const imageUrl = URL.createObjectURL(blob);
-        const sizeKB = (blob.size / 1024).toFixed(1);
-        const { width, height } = meta;
-        const dimensionText = width && height ? `${width}x${height}` : '未知';
+        const quality = 0.9;
+        const dataURL = canvas.toDataURL('image/jpeg', quality);
+        const blob = this.dataURLToBlob(dataURL);
+        const sizeKB = blob ? (blob.size / 1024).toFixed(1) : '未知';
+        const dimText = `${canvas.width}x${canvas.height}`;
 
-        // 关闭Loading提示，显示截图预览弹窗
         await Swal.fire({
           title: '📱 食谱分享图片',
           html: `
-            <div style="text-align: center; margin: 20px 0;">
-              <img src="${imageUrl}" 
+            <div style="text-align: center; margin: 16px 0;">
+              <img src="${dataURL}" 
                    class="share-preview-img"
-                   style="max-width: 100%; max-height: 400px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); -webkit-touch-callout: default; user-select: auto;" 
+                   style="max-width: 100%; max-height: 440px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); -webkit-touch-callout: default; user-select: auto;" 
                    alt="食谱截图">
-              <p style="margin-top: 15px; color: #666; font-size: 13px; line-height:1.5;">
-                格式: JPEG | 尺寸: ${dimensionText} | 体积: ${sizeKB}KB<br>
-                📱 <strong>移动端：</strong>长按图片保存/转发<br>
-                💻 <strong>电脑：</strong>右键保存或点击“下载”按钮
-              </p>
+              <p style="margin-top:12px;font-size:12px;color:#666;line-height:1.4;">JPEG | 尺寸: ${dimText} | 体积: ${sizeKB}KB</p>
             </div>
           `,
-          width: 600,
-          padding: '20px',
+          width: 620,
+          padding: '18px',
           showCancelButton: true,
-          confirmButtonText: '💾 直接下载',
+          confirmButtonText: '💾 下载',
           cancelButtonText: navigator.share ? '📤 系统分享' : '❌ 关闭',
           showCloseButton: true,
           allowOutsideClick: false,
-          allowEscapeKey: true,
-          allowEnterKey: false,
-          customClass: {
-            popup: 'share-popup',
-            image: 'share-image'
-          },
+          customClass: { popup: 'share-popup', image: 'share-image' },
           didOpen: () => {
-            // 解除 SweetAlert2 / 全局样式对图片长按的影响
             const img = document.querySelector(
               '.swal2-popup.share-popup .share-preview-img'
             );
@@ -531,55 +465,58 @@ const RecipeGeneratorApp = {
               img.style.webkitUserSelect = 'auto';
               img.style.userSelect = 'auto';
               img.style.pointerEvents = 'auto';
-              // 防止点击图片触发关闭（某些 UA 会把点击冒泡到按钮）
               img.addEventListener('click', e => e.stopPropagation());
-              // 避免 contextmenu 被阻止（桌面调试）
               img.addEventListener('contextmenu', e => e.stopPropagation());
-              // 触摸长按时不要触发默认的拖拽阻断
               img.setAttribute('draggable', 'false');
             }
-          },
-          willClose: () => {
-            // 清理图片URL
-            URL.revokeObjectURL(imageUrl);
           }
         }).then(async result => {
           if (result.isConfirmed) {
-            // 用户选择直接下载
-            await this.downloadImage(blob);
+            await this.downloadImage(dataURL);
           } else if (
             result.dismiss === Swal.DismissReason.cancel &&
-            navigator.share
+            navigator.share &&
+            blob
           ) {
-            // 用户选择系统分享（仅在支持时显示此按钮）
             await this.systemShare(blob);
           }
         });
-      } catch (error) {
-        console.error('分享处理失败:', error);
+      } catch (e) {
+        console.error('分享处理失败:', e);
         this.showErrorMessage('分享失败，请稍后重试');
       }
     },
 
-    async downloadImage(blob) {
+    dataURLToBlob(dataURL) {
       try {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        const ext = blob.type === 'image/jpeg' ? 'jpg' : 'png';
-        link.download = `${
-          this.recipeResult.recipe_name || '食谱'
-        }_${new Date().getTime()}.${ext}`;
+        const arr = dataURL.split(',');
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8 = new Uint8Array(n);
+        while (n--) u8[n] = bstr.charCodeAt(n);
+        return new Blob([u8], { type: mime });
+      } catch (err) {
+        console.warn('dataURL 转 Blob 失败:', err);
+        return null;
+      }
+    },
 
+    async downloadImage(dataURL) {
+      try {
+        const link = document.createElement('a');
+        link.href = dataURL;
+        link.download = `${
+          this.recipeResult?.recipe_name || '食谱'
+        }_${Date.now()}.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        URL.revokeObjectURL(url);
-        this.showSuccessMessage('📥 食谱图片已下载到本地！');
-      } catch (error) {
-        console.error('下载失败:', error);
-        this.showErrorMessage('下载失败，请稍后重试');
+        this.showSuccessMessage('📥 食谱图片已下载！');
+      } catch (e) {
+        console.error('下载失败:', e);
+        this.showErrorMessage('下载失败');
       }
     },
 
