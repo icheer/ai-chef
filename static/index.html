@@ -229,7 +229,7 @@
           <p class="recipe-description">{{ recipeResult.description || '一道美味的家常菜' }}</p>
           
           <!-- 操作按钮 -->
-          <div class="recipe-actions">
+          <div v-show="!isCapturing" class="recipe-actions">
             <button @click="shareRecipe" class="btn-secondary">📤 分享食谱</button>
             <button @click="generateNewRecipe" class="btn-secondary">🔄 重新生成</button>
           </div>
@@ -306,6 +306,6 @@
     </section>
   </div>
   
-  <script src="./app.js?v=5"></script>
+  <script src="./app.js?v=6"></script>
 </body>
 </html>

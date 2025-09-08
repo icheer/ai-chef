@@ -90,6 +90,7 @@ const RecipeGeneratorApp = {
       selectedModel: 'gemini-2.5-flash',
       recipeResult: null,
       showResult: false,
+      isCapturing: false,
 
       // localStorage相关
       storageKey: 'smart-recipe-generator',
@@ -398,6 +399,7 @@ const RecipeGeneratorApp = {
         await this.prepareElementForCapture(recipeElement);
 
         // 等待额外的时间确保渲染完成
+        this.isCapturing = true;
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // 使用html2canvas生成图片
@@ -432,6 +434,7 @@ const RecipeGeneratorApp = {
             }
           }
         });
+        this.isCapturing = false;
 
         // 转换为图片数据
         canvas.toBlob(async blob => {
@@ -536,7 +539,9 @@ const RecipeGeneratorApp = {
           },
           didOpen: () => {
             // 解除 SweetAlert2 / 全局样式对图片长按的影响
-            const img = document.querySelector('.swal2-popup.share-popup .share-preview-img');
+            const img = document.querySelector(
+              '.swal2-popup.share-popup .share-preview-img'
+            );
             if (img) {
               img.style.webkitTouchCallout = 'default';
               img.style.webkitUserSelect = 'auto';
