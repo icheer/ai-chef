@@ -167,6 +167,7 @@ const RecipeGeneratorApp = {
       }
 
       this.isLoading = true;
+      window.scrollTo(0, document.body.scrollHeight);
 
       try {
         const requestData = {
