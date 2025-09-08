@@ -104,10 +104,12 @@ function handleStaticFiles(pathname) {
   }
 
   const contentType = getContentType(pathname);
+  const cacheControl =
+    pathname === '/app.js' ? 'no-cache' : 'public, max-age=3600';
   return new Response(content, {
     headers: {
       'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=3600'
+      'Cache-Control': cacheControl
     }
   });
 }
@@ -136,7 +138,8 @@ function getContentType(pathname) {
 function getRandomApiKey(env) {
   const keys = env.GEMINI_API_KEYS;
   if (!keys) return null;
-  const apiKeys = keys.split(',')
+  const apiKeys = keys
+    .split(',')
     .map(key => key.trim())
     .filter(key => key);
   const randomIndex = Math.floor(Math.random() * apiKeys.length);
