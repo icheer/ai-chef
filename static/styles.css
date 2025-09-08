@@ -126,7 +126,7 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
 
 /* ========== 11. 食谱 - 各内容分区 ========== */
 .nutrition-section, .ingredients-section, .cooking-steps-section, .tips-section, .variations-section {
-  margin:1.75rem 1.75rem 2rem; padding:1.25rem 1.5rem; background:#fafbfc; border-radius:var(--radius-md); border-left:4px solid var(--primary-color);
+  margin:1.75rem 1.75rem 2rem; padding:1.25rem 1.5rem; background:#fafbfc; border-radius:var(--radius-md); border-left:4px solid var(--border-color);
 }
 .nutrition-section h3, .ingredients-section h3, .cooking-steps-section h3, .tips-section h3, .variations-section h3 { font-size:1.15rem; font-weight:600; color:var(--primary-color); margin-bottom:1rem; display:flex; gap:.5rem; align-items:center; }
 
@@ -178,7 +178,7 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
   .quantity-unit-wrapper { justify-content:center; }
   .recipe-header { padding:1.8rem 1rem 1.6rem; }
   .recipe-title { font-size:1.75rem; }
-  .nutrition-section, .ingredients-section, .cooking-steps-section, .tips-section, .variations-section { margin:1.25rem 1rem 1.5rem; padding:1rem 1rem 1.1rem; }
+  .nutrition-section, .ingredients-section, .cooking-steps-section, .tips-section, .variations-section { margin:1.25rem 0 1.5rem; padding:1rem 1rem 1.1rem; }
   .nutrition-grid { grid-template-columns:repeat(2,1fr); }
   .recipe-actions { flex-direction:column; }
   .recipe-actions .btn-secondary { width:100%; }
