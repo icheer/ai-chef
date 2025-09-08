@@ -129,12 +129,17 @@ const RecipeGeneratorApp = {
         });
         
         const result = await response.json();
-        
+
         if (!response.ok) {
+          // 特殊处理限流
+            if (response.status === 429) {
+            const retryMsg = result.reset_in_seconds ? `请在 ${Math.ceil(result.reset_in_seconds/60)} 分钟后重试` : '请稍后重试';
+            throw new Error(`${result.error || '已达调用上限'} (模型: ${result.model} 已用 ${result.used}/${result.limit})，${retryMsg}`);
+          }
           throw new Error(result.error || '请求失败');
         }
-        
-        this.recipeResult = result;
+
+        this.recipeResult = result; // result 里现在包含 _usage
         this.showResult = true;
         this.showSuccessMessage('🎉 食谱生成成功！');
         
@@ -237,7 +242,7 @@ const RecipeGeneratorApp = {
           this.userProfile = { ...this.userProfile, ...data.userProfile };
           this.dietaryRestrictions = { ...this.dietaryRestrictions, ...data.dietaryRestrictions };
           this.selectedIngredients = data.selectedIngredients || [];
-          this.selectedModel = data.selectedModel || 'gemini-2.5-pro';
+          this.selectedModel = data.selectedModel || 'gemini-2.5-flash';
           
           // 恢复食谱结果
           if (data.recipeResult) {

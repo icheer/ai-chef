@@ -5,6 +5,61 @@ const staticFiles = {
   '/app.js': '{{PLACEHOLDER_APP_JS}}'
 };
 
+// =============================================
+// 模型调用计数（仅当前 Worker 进程内记忆，可能因实例回收而重置）
+// 需求：按“整点”统计 gemini-2.5-pro / gemini-2.5-flash 调用次数
+// 限额：pro 15 次 / hour, flash 50 次 / hour
+// =============================================
+const MODEL_LIMITS = {
+  'gemini-2.5-pro': 15,
+  'gemini-2.5-flash': 50
+};
+
+// 保存当前整点 key 及各模型计数
+const modelUsageState = {
+  hourKey: 0,
+  counts: {
+    'gemini-2.5-pro': 0,
+    'gemini-2.5-flash': 0
+  }
+};
+
+function checkAndIncreaseModelUsage(model) {
+  const now = Date.now();
+  const currentHourKey = Math.floor(now / 3600000); // 取整点
+
+  // 跨整点重置
+  if (modelUsageState.hourKey !== currentHourKey) {
+    modelUsageState.hourKey = currentHourKey;
+    modelUsageState.counts['gemini-2.5-pro'] = 0;
+    modelUsageState.counts['gemini-2.5-flash'] = 0;
+  }
+
+  const limit = MODEL_LIMITS[model] ?? 50; // 未知模型给默认上限 50
+  const current = modelUsageState.counts[model] ?? 0;
+
+  if (current >= limit) {
+    const resetInSeconds = Math.ceil(
+      ((modelUsageState.hourKey + 1) * 3600000 - now) / 1000
+    );
+    return {
+      allowed: false,
+      current,
+      limit,
+      resetInSeconds
+    };
+  }
+
+  modelUsageState.counts[model] = current + 1; // 记录一次“尝试调用”即计数
+  const remaining = limit - (current + 1);
+  return {
+    allowed: true,
+    current: current + 1,
+    limit,
+    remaining
+  };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -235,24 +290,57 @@ async function handleRecipeGeneration(request, env) {
       });
     }
 
+    // 确认模型并做限流检查
+    const model = requestData.selectedModel || 'gemini-2.5-pro';
+    const usage = checkAndIncreaseModelUsage(model);
+    if (!usage.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: '当前整点该模型调用次数已达上限，请稍后再试',
+          model,
+          limit: usage.limit,
+          used: usage.current,
+          reset_in_seconds: usage.resetInSeconds
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      );
+    }
+
     // 构建提示词
     const prompt = buildRecipePrompt(requestData);
 
     // 调用Gemini API
-    const model = requestData.selectedModel || 'gemini-2.5-pro';
     const response = await callGeminiAPI(prompt, model, env);
 
     // 解析并返回结果
     const recipe = parseGeminiResponse(response);
 
-    return new Response(JSON.stringify(recipe), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+    return new Response(
+      JSON.stringify({
+        ...recipe,
+        _usage: {
+          model,
+          used: usage.current,
+          limit: usage.limit,
+          remaining: usage.remaining,
+          hour_key: modelUsageState.hourKey
+        }
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
       }
-    });
+    );
   } catch (error) {
     console.error('API错误:', error);
     return new Response(
