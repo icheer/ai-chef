@@ -8,7 +8,6 @@
   <!-- CDN资源引入 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://unpkg.com/sweetalert2@11"></script>
-  <script src="https://unpkg.com/showdown/dist/showdown.min.js"></script>
   <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   
   <!-- 使用清理后的样式文件，如需回滚可改回 styles.css -->
@@ -206,28 +205,39 @@
       </div>
     </section>
 
-    <!-- 食谱展示区域 -->
-    <section v-if="showResult" class="recipe-result">
-      <!-- 食谱概要 -->
-      <header class="recipe-header">
-        <h2 class="recipe-title">{{ recipeResult.recipe_name || '美味食谱' }}</h2>
-        <div class="recipe-meta">
-          <span class="time">⏱️ {{ recipeResult.cooking_time || 30 }}分钟</span>
-          <span class="difficulty">📊 {{ recipeResult.difficulty || '简单' }}</span>
-          <span class="servings">👥 {{ recipeResult.serving_size || userProfile.serving_size }}人份</span>
-          <span v-if="recipeResult.cuisine_style" class="cuisine">🍽️ {{ recipeResult.cuisine_style }}</span>
+    <!-- 食谱展示区域 (加载或已有结果都显示容器) -->
+    <section v-if="showResult || isLoading" class="recipe-result">
+      <!-- Loading 骨架 -->
+      <div v-if="isLoading" class="recipe-loading">
+        <div class="loading-spin"></div>
+        <h3>正在生成 AI 食谱...</h3>
+        <p>根据您的食材与偏好智能规划菜谱，请稍候</p>
+        <div class="loading-bars">
+          <span v-for="n in 5" :key="n" class="bar" :style="{ animationDelay: (n*0.12) + 's' }"></span>
         </div>
-        <p class="recipe-description">{{ recipeResult.description || '一道美味的家常菜' }}</p>
-        
-        <!-- 操作按钮 -->
-        <div class="recipe-actions">
-          <button @click="shareRecipe" class="btn-secondary">📤 分享食谱</button>
-          <button @click="generateNewRecipe" class="btn-secondary">🔄 重新生成</button>
-        </div>
-      </header>
+      </div>
 
-      <!-- 营养信息 -->
-      <div v-if="recipeResult.nutrition_info" class="nutrition-section">
+      <!-- 食谱概要 -->
+      <template v-else>
+        <header class="recipe-header">
+          <h2 class="recipe-title">{{ recipeResult.recipe_name || '美味食谱' }}</h2>
+          <div class="recipe-meta">
+            <span class="time">⏱️ {{ recipeResult.cooking_time || 30 }}分钟</span>
+            <span class="difficulty">📊 {{ recipeResult.difficulty || '简单' }}</span>
+            <span class="servings">👥 {{ recipeResult.serving_size || userProfile.serving_size }}人份</span>
+            <span v-if="recipeResult.cuisine_style" class="cuisine">🍽️ {{ recipeResult.cuisine_style }}</span>
+          </div>
+          <p class="recipe-description">{{ recipeResult.description || '一道美味的家常菜' }}</p>
+          
+          <!-- 操作按钮 -->
+          <div class="recipe-actions">
+            <button @click="shareRecipe" class="btn-secondary">📤 分享食谱</button>
+            <button @click="generateNewRecipe" class="btn-secondary">🔄 重新生成</button>
+          </div>
+        </header>
+
+  <!-- 营养信息 -->
+  <div v-if="!isLoading && recipeResult.nutrition_info" class="nutrition-section">
         <h3>📊 营养信息</h3>
         <div class="nutrition-grid">
           <div class="nutrition-item">
@@ -249,8 +259,8 @@
         </div>
       </div>
 
-      <!-- 所需食材 -->
-      <div v-if="recipeResult.ingredients" class="ingredients-section">
+  <!-- 所需食材 -->
+  <div v-if="!isLoading && recipeResult.ingredients" class="ingredients-section">
         <h3>🛒 所需食材</h3>
         <ul class="ingredients-list">
           <li v-for="ingredient in recipeResult.ingredients" :key="ingredient.name" class="ingredient-row">
@@ -261,8 +271,8 @@
         </ul>
       </div>
 
-      <!-- 烹饪步骤 -->
-      <div v-if="recipeResult.cooking_steps" class="cooking-steps-section">
+  <!-- 烹饪步骤 -->
+  <div v-if="!isLoading && recipeResult.cooking_steps" class="cooking-steps-section">
         <h3>👨‍🍳 烹饪步骤</h3>
         <div class="steps-container">
           <div v-for="(step, index) in recipeResult.cooking_steps" 
@@ -278,21 +288,22 @@
         </div>
       </div>
 
-      <!-- 厨师小贴士 -->
-      <div v-if="recipeResult.chef_tips && recipeResult.chef_tips.length > 0" class="tips-section">
+  <!-- 厨师小贴士 -->
+  <div v-if="!isLoading && recipeResult.chef_tips && recipeResult.chef_tips.length > 0" class="tips-section">
         <h3>👨‍🍳 厨师小贴士</h3>
         <ul class="tips-list">
           <li v-for="tip in recipeResult.chef_tips" :key="tip">{{ tip }}</li>
         </ul>
       </div>
 
-      <!-- 变化建议 -->
-      <div v-if="recipeResult.variations && recipeResult.variations.length > 0" class="variations-section">
+  <!-- 变化建议 -->
+  <div v-if="!isLoading && recipeResult.variations && recipeResult.variations.length > 0" class="variations-section">
         <h3>🔄 变化建议</h3>
         <ul class="variations-list">
           <li v-for="variation in recipeResult.variations" :key="variation">{{ variation }}</li>
         </ul>
-      </div>
+  </div>
+  </template>
     </section>
   </div>
   
