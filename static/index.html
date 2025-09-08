@@ -256,7 +256,11 @@
 
         <!-- 数据管理按钮 -->
         <div class="data-controls">
-          <button @click="clearLocalStorage" class="btn-danger">
+          <button
+            @click="clearLocalStorage"
+            class="btn-danger"
+            :disabled="isLoading"
+          >
             🗑️ 清除保存数据
           </button>
         </div>
