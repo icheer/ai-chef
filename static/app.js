@@ -35,7 +35,7 @@ const RecipeGeneratorApp = {
       
       // 应用状态
       isLoading: false,
-      selectedModel: 'gemini-2.5-pro',
+      selectedModel: 'gemini-2.5-flash',
       recipeResult: null,
       showResult: false,
       
