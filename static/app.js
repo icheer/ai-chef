@@ -319,6 +319,12 @@ const RecipeGeneratorApp = {
           throw new Error('找不到食谱内容');
         }
         
+        // 确保元素完全可见并停止所有动画
+        await this.prepareElementForCapture(recipeElement);
+        
+        // 等待额外的时间确保渲染完成
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // 使用html2canvas生成图片
         const canvas = await html2canvas(recipeElement, {
           backgroundColor: '#ffffff',
@@ -326,7 +332,30 @@ const RecipeGeneratorApp = {
           useCORS: true,
           allowTaint: false,
           height: recipeElement.scrollHeight,
-          windowHeight: recipeElement.scrollHeight
+          windowHeight: recipeElement.scrollHeight,
+          logging: false, // 关闭日志避免控制台输出
+          imageTimeout: 15000, // 增加图片加载超时时间
+          removeContainer: true, // 移除容器避免影响
+          foreignObjectRendering: false, // 禁用外部对象渲染
+          onclone: (clonedDoc) => {
+            // 在克隆的文档中移除所有动画和过渡
+            const clonedElement = clonedDoc.querySelector('.recipe-result');
+            if (clonedElement) {
+              clonedElement.style.animation = 'none';
+              clonedElement.style.transition = 'none';
+              clonedElement.style.transform = 'none';
+              clonedElement.style.opacity = '1';
+              
+              // 移除所有子元素的动画和过渡
+              const allElements = clonedElement.querySelectorAll('*');
+              allElements.forEach(el => {
+                el.style.animation = 'none';
+                el.style.transition = 'none';
+                el.style.transform = 'none';
+                el.style.opacity = '1';
+              });
+            }
+          }
         });
         
         // 转换为图片数据
@@ -338,6 +367,61 @@ const RecipeGeneratorApp = {
         console.error('分享失败:', error);
         this.showErrorMessage('分享失败，请稍后重试');
       }
+    },
+
+    // 准备元素用于截图 - 确保可见性和停止动画
+    async prepareElementForCapture(element) {
+      // 滚动到元素位置确保完全可见
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+      // 等待滚动动画完成
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // 临时移除可能影响截图的CSS属性
+      const originalStyles = new Map();
+      
+      // 保存并重置动画相关样式
+      const elementsToModify = [element, ...element.querySelectorAll('*')];
+      
+      elementsToModify.forEach(el => {
+        const computedStyle = window.getComputedStyle(el);
+        const originalStyle = {
+          animation: el.style.animation,
+          transition: el.style.transition,
+          transform: el.style.transform,
+          opacity: el.style.opacity,
+          visibility: el.style.visibility
+        };
+        
+        originalStyles.set(el, originalStyle);
+        
+        // 暂时禁用动画和过渡
+        el.style.animation = 'none';
+        el.style.transition = 'none';
+        
+        // 确保元素可见
+        if (computedStyle.opacity === '0' || computedStyle.visibility === 'hidden') {
+          el.style.opacity = '1';
+          el.style.visibility = 'visible';
+        }
+      });
+      
+      // 等待样式应用
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 返回恢复函数（虽然在截图场景下可能不需要）
+      return () => {
+        elementsToModify.forEach(el => {
+          const original = originalStyles.get(el);
+          if (original) {
+            el.style.animation = original.animation;
+            el.style.transition = original.transition;
+            el.style.transform = original.transform;
+            el.style.opacity = original.opacity;
+            el.style.visibility = original.visibility;
+          }
+        });
+      };
     },
     
     async handleShareBlob(blob) {

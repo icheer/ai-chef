@@ -5,7 +5,7 @@ const staticFiles = {
   '/app.js': '{{PLACEHOLDER_APP_JS}}'
 };
 
-export default { 
+export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
