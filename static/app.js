@@ -13,7 +13,7 @@ const RecipeGeneratorApp = {
         cuisine_preferences: [],
         spice_tolerance: '中辣'
       },
-      
+
       // 饮食限制
       dietaryRestrictions: {
         allergies: '',
@@ -21,37 +21,91 @@ const RecipeGeneratorApp = {
         dislikes: '',
         diet_type: '无特殊要求'
       },
-      
+
       // 食材管理
       selectedIngredients: [],
       customIngredientName: '',
       ingredientCategories: {
-        '蛋白质': ['鸡蛋', '鸡胸肉', '猪肉', '牛肉', '豆腐', '鱼肉', '虾', '鸡腿', '培根'],
-        '蔬菜': ['番茄', '洋葱', '土豆', '胡萝卜', '白菜', '青菜', '西兰花', '茄子', '青椒', '黄瓜'],
-        '主食': ['大米', '面条', '面粉', '馒头', '面包', '意大利面', '年糕', '粉丝'],
-        '调料': ['盐', '生抽', '老抽', '料酒', '香油', '胡椒粉', '八角', '桂皮', '花椒', '辣椒粉'],
-        '其他': ['食用油', '白糖', '醋', '蒜', '姜', '葱', '香菜', '柠檬', '奶酪', '黄油']
+        蛋白质: [
+          '鸡蛋',
+          '鸡胸肉',
+          '猪肉',
+          '牛肉',
+          '豆腐',
+          '鱼肉',
+          '虾',
+          '鸡腿',
+          '培根'
+        ],
+        蔬菜: [
+          '番茄',
+          '洋葱',
+          '土豆',
+          '胡萝卜',
+          '白菜',
+          '青菜',
+          '西兰花',
+          '茄子',
+          '青椒',
+          '黄瓜'
+        ],
+        主食: [
+          '大米',
+          '面条',
+          '面粉',
+          '馒头',
+          '面包',
+          '意大利面',
+          '年糕',
+          '粉丝'
+        ],
+        调料: [
+          '盐',
+          '生抽',
+          '老抽',
+          '料酒',
+          '香油',
+          '胡椒粉',
+          '八角',
+          '桂皮',
+          '花椒',
+          '辣椒粉'
+        ],
+        其他: [
+          '食用油',
+          '白糖',
+          '醋',
+          '蒜',
+          '姜',
+          '葱',
+          '香菜',
+          '柠檬',
+          '奶酪',
+          '黄油'
+        ]
       },
-      
+
       // 应用状态
       isLoading: false,
       selectedModel: 'gemini-2.5-flash',
       recipeResult: null,
       showResult: false,
-      
+
       // localStorage相关
       storageKey: 'smart-recipe-generator',
       lastSaveTime: null
-    }
+    };
   },
-  
+
   methods: {
     // 食材管理方法
     addIngredient(name, category = '其他') {
-      const existing = this.selectedIngredients.find(item => item.name === name);
+      const existing = this.selectedIngredients.find(
+        item => item.name === name
+      );
       if (existing) {
-        existing.quantity += 1;
-        this.showSuccessMessage(`${name} 数量已增加`);
+        // 移除食材
+        this.removeIngredient(this.selectedIngredients.indexOf(existing));
       } else {
         this.selectedIngredients.push({
           name: name,
@@ -63,24 +117,24 @@ const RecipeGeneratorApp = {
         this.showSuccessMessage(`已添加 ${name}`);
       }
     },
-    
+
     getDefaultUnit(category) {
       const defaultUnits = {
-        '蛋白质': '个',
-        '蔬菜': '个', 
-        '主食': 'g',
-        '调料': '茶匙',
-        '其他': 'ml'
+        蛋白质: '个',
+        蔬菜: '个',
+        主食: 'g',
+        调料: '茶匙',
+        其他: 'ml'
       };
       return defaultUnits[category] || '个';
     },
-    
+
     removeIngredient(index) {
       const ingredient = this.selectedIngredients[index];
       this.selectedIngredients.splice(index, 1);
       this.showSuccessMessage(`已移除 ${ingredient.name}`);
     },
-    
+
     updateIngredientQuantity(index, quantity) {
       const numQuantity = parseFloat(quantity);
       if (numQuantity <= 0) {
@@ -89,11 +143,13 @@ const RecipeGeneratorApp = {
         this.selectedIngredients[index].quantity = numQuantity;
       }
     },
-    
+
     isIngredientSelected(ingredientName) {
-      return this.selectedIngredients.some(item => item.name === ingredientName);
+      return this.selectedIngredients.some(
+        item => item.name === ingredientName
+      );
     },
-    
+
     addCustomIngredient() {
       const name = this.customIngredientName.trim();
       if (name) {
@@ -103,15 +159,15 @@ const RecipeGeneratorApp = {
         this.showWarningMessage('请输入食材名称');
       }
     },
-    
+
     // API调用方法
     async generateRecipe() {
       if (!this.validateForm()) {
         return;
       }
-      
+
       this.isLoading = true;
-      
+
       try {
         const requestData = {
           userProfile: this.userProfile,
@@ -119,7 +175,7 @@ const RecipeGeneratorApp = {
           selectedIngredients: this.selectedIngredients,
           selectedModel: this.selectedModel
         };
-        
+
         const response = await fetch('/api/generate-recipe', {
           method: 'POST',
           headers: {
@@ -127,14 +183,20 @@ const RecipeGeneratorApp = {
           },
           body: JSON.stringify(requestData)
         });
-        
+
         const result = await response.json();
 
         if (!response.ok) {
           // 特殊处理限流
-            if (response.status === 429) {
-            const retryMsg = result.reset_in_seconds ? `请在 ${Math.ceil(result.reset_in_seconds/60)} 分钟后重试` : '请稍后重试';
-            throw new Error(`${result.error || '已达调用上限'} (模型: ${result.model} 已用 ${result.used}/${result.limit})，${retryMsg}`);
+          if (response.status === 429) {
+            const retryMsg = result.reset_in_seconds
+              ? `请在 ${Math.ceil(result.reset_in_seconds / 60)} 分钟后重试`
+              : '请稍后重试';
+            throw new Error(
+              `${result.error || '已达调用上限'} (模型: ${result.model} 已用 ${
+                result.used
+              }/${result.limit})，${retryMsg}`
+            );
           }
           throw new Error(result.error || '请求失败');
         }
@@ -142,17 +204,16 @@ const RecipeGeneratorApp = {
         this.recipeResult = result; // result 里现在包含 _usage
         this.showResult = true;
         this.showSuccessMessage('🎉 食谱生成成功！');
-        
+
         // 滚动到结果区域
         this.$nextTick(() => {
           const resultElement = document.querySelector('.recipe-result');
           if (resultElement) {
-            resultElement.scrollIntoView({ 
-              behavior: 'smooth' 
+            resultElement.scrollIntoView({
+              behavior: 'smooth'
             });
           }
         });
-        
       } catch (error) {
         console.error('生成食谱失败:', error);
         this.showErrorMessage(`生成失败: ${error.message}`);
@@ -160,7 +221,7 @@ const RecipeGeneratorApp = {
         this.isLoading = false;
       }
     },
-    
+
     // SweetAlert2 提示方法
     showSuccessMessage(message) {
       Swal.fire({
@@ -173,7 +234,7 @@ const RecipeGeneratorApp = {
         toast: true
       });
     },
-    
+
     showErrorMessage(message) {
       Swal.fire({
         icon: 'error',
@@ -182,7 +243,7 @@ const RecipeGeneratorApp = {
         confirmButtonColor: '#E74C3C'
       });
     },
-    
+
     showWarningMessage(message) {
       Swal.fire({
         icon: 'warning',
@@ -191,27 +252,30 @@ const RecipeGeneratorApp = {
         confirmButtonColor: '#F39C12'
       });
     },
-    
+
     // 表单验证
     validateForm() {
       if (this.selectedIngredients.length === 0) {
         this.showWarningMessage('请至少选择一种食材');
         return false;
       }
-      
-      if (this.userProfile.serving_size < 1 || this.userProfile.serving_size > 10) {
+
+      if (
+        this.userProfile.serving_size < 1 ||
+        this.userProfile.serving_size > 10
+      ) {
         this.showWarningMessage('用餐人数应在1-10人之间');
         return false;
       }
-      
+
       if (this.userProfile.time_available < 5) {
         this.showWarningMessage('烹饪时间不能少于5分钟');
         return false;
       }
-      
+
       return true;
     },
-    
+
     // localStorage数据持久化
     saveToLocalStorage() {
       const dataToSave = {
@@ -223,7 +287,7 @@ const RecipeGeneratorApp = {
         showResult: this.showResult,
         timestamp: new Date().toISOString()
       };
-      
+
       try {
         localStorage.setItem(this.storageKey, JSON.stringify(dataToSave));
         this.lastSaveTime = dataToSave.timestamp;
@@ -231,25 +295,28 @@ const RecipeGeneratorApp = {
         console.error('保存数据到localStorage失败:', error);
       }
     },
-    
+
     loadFromLocalStorage() {
       try {
         const savedData = localStorage.getItem(this.storageKey);
         if (savedData) {
           const data = JSON.parse(savedData);
-          
+
           // 恢复用户档案
           this.userProfile = { ...this.userProfile, ...data.userProfile };
-          this.dietaryRestrictions = { ...this.dietaryRestrictions, ...data.dietaryRestrictions };
+          this.dietaryRestrictions = {
+            ...this.dietaryRestrictions,
+            ...data.dietaryRestrictions
+          };
           this.selectedIngredients = data.selectedIngredients || [];
           this.selectedModel = data.selectedModel || 'gemini-2.5-flash';
-          
+
           // 恢复食谱结果
           if (data.recipeResult) {
             this.recipeResult = data.recipeResult;
             this.showResult = data.showResult || false;
           }
-          
+
           this.lastSaveTime = data.timestamp;
           console.log('已从localStorage加载上次保存的数据');
         }
@@ -257,7 +324,7 @@ const RecipeGeneratorApp = {
         console.error('从localStorage加载数据失败:', error);
       }
     },
-    
+
     clearLocalStorage() {
       Swal.fire({
         title: '确认清除数据',
@@ -267,7 +334,7 @@ const RecipeGeneratorApp = {
         confirmButtonText: '确认清除',
         cancelButtonText: '取消',
         confirmButtonColor: '#E74C3C'
-      }).then((result) => {
+      }).then(result => {
         if (result.isConfirmed) {
           localStorage.removeItem(this.storageKey);
           this.resetAllData();
@@ -275,7 +342,7 @@ const RecipeGeneratorApp = {
         }
       });
     },
-    
+
     resetAllData() {
       // 重置所有数据到初始状态
       Object.assign(this.userProfile, {
@@ -285,28 +352,28 @@ const RecipeGeneratorApp = {
         cuisine_preferences: [],
         spice_tolerance: '中辣'
       });
-      
+
       Object.assign(this.dietaryRestrictions, {
         allergies: '',
         intolerances: '',
         dislikes: '',
         diet_type: '无特殊要求'
       });
-      
+
       this.selectedIngredients = [];
       this.recipeResult = null;
       this.showResult = false;
       this.lastSaveTime = null;
       this.customIngredientName = '';
     },
-    
+
     // 食谱分享功能
     async shareRecipe() {
       if (!this.recipeResult) {
         this.showErrorMessage('请先生成食谱再分享');
         return;
       }
-      
+
       try {
         // 显示分享进度提示
         Swal.fire({
@@ -316,20 +383,20 @@ const RecipeGeneratorApp = {
             Swal.showLoading();
           }
         });
-        
+
         // 选择要截图的元素
         const recipeElement = document.querySelector('.recipe-result');
-        
+
         if (!recipeElement) {
           throw new Error('找不到食谱内容');
         }
-        
+
         // 确保元素完全可见并停止所有动画
         await this.prepareElementForCapture(recipeElement);
-        
+
         // 等待额外的时间确保渲染完成
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         // 使用html2canvas生成图片
         const canvas = await html2canvas(recipeElement, {
           backgroundColor: '#ffffff',
@@ -342,7 +409,7 @@ const RecipeGeneratorApp = {
           imageTimeout: 15000, // 增加图片加载超时时间
           removeContainer: true, // 移除容器避免影响
           foreignObjectRendering: false, // 禁用外部对象渲染
-          onclone: (clonedDoc) => {
+          onclone: clonedDoc => {
             // 在克隆的文档中移除所有动画和过渡
             const clonedElement = clonedDoc.querySelector('.recipe-result');
             if (clonedElement) {
@@ -350,7 +417,7 @@ const RecipeGeneratorApp = {
               clonedElement.style.transition = 'none';
               clonedElement.style.transform = 'none';
               clonedElement.style.opacity = '1';
-              
+
               // 移除所有子元素的动画和过渡
               const allElements = clonedElement.querySelectorAll('*');
               allElements.forEach(el => {
@@ -362,12 +429,11 @@ const RecipeGeneratorApp = {
             }
           }
         });
-        
+
         // 转换为图片数据
-        canvas.toBlob(async (blob) => {
+        canvas.toBlob(async blob => {
           await this.handleShareBlob(blob);
         }, 'image/png');
-        
       } catch (error) {
         console.error('分享失败:', error);
         this.showErrorMessage('分享失败，请稍后重试');
@@ -378,16 +444,16 @@ const RecipeGeneratorApp = {
     async prepareElementForCapture(element) {
       // 滚动到元素位置确保完全可见
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      
+
       // 等待滚动动画完成
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       // 临时移除可能影响截图的CSS属性
       const originalStyles = new Map();
-      
+
       // 保存并重置动画相关样式
       const elementsToModify = [element, ...element.querySelectorAll('*')];
-      
+
       elementsToModify.forEach(el => {
         const computedStyle = window.getComputedStyle(el);
         const originalStyle = {
@@ -397,23 +463,26 @@ const RecipeGeneratorApp = {
           opacity: el.style.opacity,
           visibility: el.style.visibility
         };
-        
+
         originalStyles.set(el, originalStyle);
-        
+
         // 暂时禁用动画和过渡
         el.style.animation = 'none';
         el.style.transition = 'none';
-        
+
         // 确保元素可见
-        if (computedStyle.opacity === '0' || computedStyle.visibility === 'hidden') {
+        if (
+          computedStyle.opacity === '0' ||
+          computedStyle.visibility === 'hidden'
+        ) {
           el.style.opacity = '1';
           el.style.visibility = 'visible';
         }
       });
-      
+
       // 等待样式应用
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // 返回恢复函数（虽然在截图场景下可能不需要）
       return () => {
         elementsToModify.forEach(el => {
@@ -428,12 +497,12 @@ const RecipeGeneratorApp = {
         });
       };
     },
-    
+
     async handleShareBlob(blob) {
       try {
         // 创建图片URL用于在弹窗中显示
         const imageUrl = URL.createObjectURL(blob);
-        
+
         // 关闭Loading提示，显示截图预览弹窗
         await Swal.fire({
           title: '📱 食谱分享图片',
@@ -462,16 +531,18 @@ const RecipeGeneratorApp = {
             // 清理图片URL
             URL.revokeObjectURL(imageUrl);
           }
-        }).then(async (result) => {
+        }).then(async result => {
           if (result.isConfirmed) {
             // 用户选择直接下载
             await this.downloadImage(blob);
-          } else if (result.dismiss === Swal.DismissReason.cancel && navigator.share) {
+          } else if (
+            result.dismiss === Swal.DismissReason.cancel &&
+            navigator.share
+          ) {
             // 用户选择系统分享（仅在支持时显示此按钮）
             await this.systemShare(blob);
           }
         });
-        
       } catch (error) {
         console.error('分享处理失败:', error);
         this.showErrorMessage('分享失败，请稍后重试');
@@ -483,15 +554,16 @@ const RecipeGeneratorApp = {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${this.recipeResult.recipe_name || '食谱'}_${new Date().getTime()}.png`;
-        
+        link.download = `${
+          this.recipeResult.recipe_name || '食谱'
+        }_${new Date().getTime()}.png`;
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         URL.revokeObjectURL(url);
         this.showSuccessMessage('📥 食谱图片已下载到本地！');
-        
       } catch (error) {
         console.error('下载失败:', error);
         this.showErrorMessage('下载失败，请稍后重试');
@@ -501,39 +573,43 @@ const RecipeGeneratorApp = {
     async systemShare(blob) {
       try {
         if (navigator.share && navigator.canShare) {
-          const file = new File([blob], `食谱_${Date.now()}.png`, { type: 'image/png' });
-          
+          const file = new File([blob], `食谱_${Date.now()}.png`, {
+            type: 'image/png'
+          });
+
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({
               title: '🍳 我的智能食谱',
-              text: `${this.recipeResult.recipe_name || '美味食谱'} - 用AI生成的美味食谱！`,
+              text: `${
+                this.recipeResult.recipe_name || '美味食谱'
+              } - 用AI生成的美味食谱！`,
               files: [file]
             });
-            
+
             this.showSuccessMessage('📤 分享成功！');
             return;
           }
         }
-        
+
         // 如果系统分享不可用，降级到下载
         await this.downloadImage(blob);
-        
       } catch (error) {
-        if (error.name !== 'AbortError') { // 用户取消分享不算错误
+        if (error.name !== 'AbortError') {
+          // 用户取消分享不算错误
           console.error('系统分享失败:', error);
           this.showErrorMessage('系统分享失败，已改为下载到本地');
           await this.downloadImage(blob);
         }
       }
     },
-    
+
     // 其他功能方法
     generateNewRecipe() {
       this.showResult = false;
       this.recipeResult = null;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    
+
     clearResult() {
       Swal.fire({
         title: '确认清除食谱',
@@ -542,7 +618,7 @@ const RecipeGeneratorApp = {
         showCancelButton: true,
         confirmButtonText: '确认清除',
         cancelButtonText: '取消'
-      }).then((result) => {
+      }).then(result => {
         if (result.isConfirmed) {
           this.showResult = false;
           this.recipeResult = null;
@@ -551,24 +627,24 @@ const RecipeGeneratorApp = {
       });
     }
   },
-  
+
   computed: {
     // 计算属性
     ingredientCount() {
       return this.selectedIngredients.length;
     },
-    
+
     formIsValid() {
       return this.ingredientCount > 0;
     },
-    
+
     lastSaveText() {
-      return this.lastSaveTime ? 
-        `上次保存: ${new Date(this.lastSaveTime).toLocaleString()}` : 
-        '暂无保存记录';
+      return this.lastSaveTime
+        ? `上次保存: ${new Date(this.lastSaveTime).toLocaleString()}`
+        : '暂无保存记录';
     }
   },
-  
+
   watch: {
     // 监听数据变化，自动保存
     userProfile: {
@@ -577,21 +653,21 @@ const RecipeGeneratorApp = {
       },
       deep: true
     },
-    
+
     dietaryRestrictions: {
       handler() {
         this.saveToLocalStorage();
       },
       deep: true
     },
-    
+
     selectedIngredients: {
       handler() {
         this.saveToLocalStorage();
       },
       deep: true
     },
-    
+
     recipeResult: {
       handler() {
         this.saveToLocalStorage();
@@ -599,11 +675,11 @@ const RecipeGeneratorApp = {
       deep: true
     }
   },
-  
+
   mounted() {
     // 组件挂载后的初始化
     this.loadFromLocalStorage();
-    
+
     // 欢迎消息
     if (!this.lastSaveTime) {
       this.showSuccessMessage('欢迎使用智能食谱生成器！请选择您的食材开始');
