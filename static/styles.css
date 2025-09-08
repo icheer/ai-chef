@@ -115,7 +115,7 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
 
 /* ========== 10. 食谱展示 (recipe-result) ========== */
 .recipe-result { margin-top:2rem; background:#fff; border:1px solid rgba(224,230,237,.85); border-radius:var(--radius-lg); box-shadow:0 8px 32px rgba(0,0,0,.12); overflow:hidden; }
-.recipe-header { background:linear-gradient(135deg,var(--primary-color),var(--primary-color-dark)); color:#fff; text-align:center; padding:2.2rem 1.5rem 2rem; position:relative; }
+.recipe-header { background:linear-gradient(135deg,var(--primary-color),var(--primary-color-dark)); color:#fff; text-align:center; padding:2.2rem 1.5rem 2rem; position:relative; border-radius: var(--radius-lg); }
 .recipe-title { font-size:2rem; font-weight:700; margin-bottom:1rem; text-shadow:0 2px 4px rgba(0,0,0,.25); }
 .recipe-meta { display:flex; flex-wrap:wrap; justify-content:center; gap:.75rem 1rem; margin-bottom:1.25rem; }
 .recipe-meta span { background:rgba(255,255,255,.22); padding:.5rem 1rem; border-radius:22px; font-size:.85rem; font-weight:500; backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.35); }
