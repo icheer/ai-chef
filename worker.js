@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+     const url = new URL(request.url);
     
     // 处理CORS预检请求
     if (request.method === 'OPTIONS') {
