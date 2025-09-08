@@ -104,8 +104,7 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
 .quantity-control button:hover { background:var(--primary-color); color:#fff; }
 .quantity-control input { width:80px; background:transparent; border:none; font-weight:600; }
 .remove-btn { position:absolute; top:.55rem; right:.55rem; width:26px; height:26px; padding: 12px; background:#ff4757; color:#fff; border-radius:50%; font-size:16px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(255,71,87,.4); }
-.remove-btn::before { content:'×'; display: block; position: absolute; width: 1em; height: 1em; top: 0; bottom: 0; left: 0; right: 0; margin: auto auto; line-height: 1em; text-align: center; opacity: 1; }
-.remove-btn:hover { background:#ff2f45; }
+.remove-btn::before { content:'×'; display: block; position: absolute; width: 1em; height: 1em; top: 0; bottom: 0; left: 0; right: 0; margin: auto auto; line-height: 1em; text-align: center; background: none; opacity: 1; }
 
 /* ========== 9. 生成控制区域 (generation-controls) ========== */
 .generation-controls { text-align:center; }
