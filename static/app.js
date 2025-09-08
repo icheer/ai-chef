@@ -99,6 +99,91 @@ const RecipeGeneratorApp = {
   },
 
   methods: {
+    // ============ 图片压缩相关配置 ============
+    getShareImageConfig() {
+      return {
+        maxLongSide: 1600, // 最长边像素限制（降低超长页面的分辨率）
+        maxBytes: 8 * 1024 * 1024, // 最终目标最大体积（8MB，远低于 25MB 安全阈值）
+        minQuality: 0.5, // JPEG 最低质量兜底
+        initialQuality: 0.9, // 起始 JPEG 质量
+        qualityStep: 0.1 // 每次降低步长
+      };
+    },
+
+    // 将原始 canvas 约束尺寸（最长边）
+    downscaleCanvasIfNeeded(canvas, maxLongSide) {
+      const { width, height } = canvas;
+      const longSide = Math.max(width, height);
+      if (longSide <= maxLongSide) return canvas; // 不需要缩放
+
+      const scale = maxLongSide / longSide;
+      const targetW = Math.round(width * scale);
+      const targetH = Math.round(height * scale);
+      const tmp = document.createElement('canvas');
+      tmp.width = targetW;
+      tmp.height = targetH;
+      const ctx = tmp.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(canvas, 0, 0, targetW, targetH);
+      return tmp;
+    },
+
+    // 以不同 JPEG 质量尝试导出，直到满足大小或降到最小质量
+    async exportCanvasAsJpegUnderLimit(
+      canvas,
+      { maxBytes, initialQuality, minQuality, qualityStep }
+    ) {
+      let q = initialQuality;
+      while (q >= minQuality) {
+        const blob = await this.canvasToBlob(canvas, 'image/jpeg', q);
+        if (blob && blob.size <= maxBytes) {
+          return blob;
+        }
+        q = parseFloat((q - qualityStep).toFixed(2));
+      }
+      // 最终兜底：返回最低质量版本（不再校验大小）
+      return await this.canvasToBlob(
+        canvas,
+        'image/jpeg',
+        Math.max(minQuality, 0.4)
+      );
+    },
+
+    // Canvas 转 Blob Promise 包装
+    canvasToBlob(canvas, mime = 'image/jpeg', quality = 0.85) {
+      return new Promise(resolve => {
+        canvas.toBlob(blob => resolve(blob), mime, quality);
+      });
+    },
+
+    // 统一导出：先按最长边缩放，再尝试 JPEG 质量压缩；若仍然过大，继续二次尺寸降采样
+    async exportOptimizedImage(originalCanvas) {
+      const cfg = this.getShareImageConfig();
+      let working = this.downscaleCanvasIfNeeded(
+        originalCanvas,
+        cfg.maxLongSide
+      );
+
+      let blob = await this.exportCanvasAsJpegUnderLimit(working, cfg);
+      // 如果依旧超过限制，继续按 0.75 / 0.6 缩放梯度再试（极端超长页面）
+      const fallbackScales = [0.75, 0.6, 0.5];
+      for (const s of fallbackScales) {
+        if (blob.size <= cfg.maxBytes) break;
+        const scaled = document.createElement('canvas');
+        scaled.width = Math.round(working.width * s);
+        scaled.height = Math.round(working.height * s);
+        const ctx = scaled.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(working, 0, 0, scaled.width, scaled.height);
+        working = scaled;
+        blob = await this.exportCanvasAsJpegUnderLimit(working, cfg);
+      }
+
+      return { blob, finalWidth: working.width, finalHeight: working.height };
+    },
+
     // 食材管理方法
     addIngredient(name, category = '其他') {
       const existing = this.selectedIngredients.find(
@@ -402,10 +487,12 @@ const RecipeGeneratorApp = {
         this.isCapturing = true;
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // 使用html2canvas生成图片
+        // 使用html2canvas生成图片 (注意：之前 scale:2 可能导致超大尺寸，这里自适应)
+        const deviceScale = window.devicePixelRatio || 1;
+        const targetScale = Math.min(1.5, deviceScale, 2); // 限制最大 1.5，防止超大
         const canvas = await html2canvas(recipeElement, {
           backgroundColor: '#ffffff',
-          scale: 2, // 提高图片清晰度
+          scale: targetScale, // 限制放大倍数
           useCORS: true,
           allowTaint: false,
           height: recipeElement.scrollHeight,
@@ -435,11 +522,21 @@ const RecipeGeneratorApp = {
           }
         });
         this.isCapturing = false;
-
-        // 转换为图片数据
-        canvas.toBlob(async blob => {
-          await this.handleShareBlob(blob);
-        }, 'image/png');
+        // 压缩 & 导出优化图片（JPEG 优化体积）
+        const { blob, finalWidth, finalHeight } =
+          await this.exportOptimizedImage(canvas);
+        console.log(
+          '[ShareImage] 导出尺寸:',
+          `${finalWidth}x${finalHeight}`,
+          '大小:',
+          (blob.size / 1024).toFixed(1) + 'KB',
+          '类型:',
+          blob.type
+        );
+        await this.handleShareBlob(blob, {
+          width: finalWidth,
+          height: finalHeight
+        });
       } catch (error) {
         console.error('分享失败:', error);
         this.showErrorMessage('分享失败，请稍后重试');
@@ -504,10 +601,13 @@ const RecipeGeneratorApp = {
       };
     },
 
-    async handleShareBlob(blob) {
+    async handleShareBlob(blob, meta = {}) {
       try {
         // 创建图片URL用于在弹窗中显示
         const imageUrl = URL.createObjectURL(blob);
+        const sizeKB = (blob.size / 1024).toFixed(1);
+        const { width, height } = meta;
+        const dimensionText = width && height ? `${width}x${height}` : '未知';
 
         // 关闭Loading提示，显示截图预览弹窗
         await Swal.fire({
@@ -518,9 +618,10 @@ const RecipeGeneratorApp = {
                    class="share-preview-img"
                    style="max-width: 100%; max-height: 400px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); -webkit-touch-callout: default; user-select: auto;" 
                    alt="食谱截图">
-              <p style="margin-top: 15px; color: #666; font-size: 14px;">
-                📱 <strong>移动端用户：</strong>长按图片保存到相册<br>
-                💻 <strong>电脑用户：</strong>右键保存图片或点击下载按钮
+              <p style="margin-top: 15px; color: #666; font-size: 13px; line-height:1.5;">
+                格式: JPEG | 尺寸: ${dimensionText} | 体积: ${sizeKB}KB<br>
+                📱 <strong>移动端：</strong>长按图片保存/转发<br>
+                💻 <strong>电脑：</strong>右键保存或点击“下载”按钮
               </p>
             </div>
           `,
@@ -582,9 +683,10 @@ const RecipeGeneratorApp = {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
+        const ext = blob.type === 'image/jpeg' ? 'jpg' : 'png';
         link.download = `${
           this.recipeResult.recipe_name || '食谱'
-        }_${new Date().getTime()}.png`;
+        }_${new Date().getTime()}.${ext}`;
 
         document.body.appendChild(link);
         link.click();
@@ -601,10 +703,13 @@ const RecipeGeneratorApp = {
     async systemShare(blob) {
       try {
         if (navigator.share && navigator.canShare) {
-          const file = new File([blob], `食谱_${Date.now()}.png`, {
-            type: 'image/png'
-          });
-
+          const file = new File(
+            [blob],
+            `食谱_${Date.now()}.${blob.type === 'image/jpeg' ? 'jpg' : 'png'}`,
+            {
+              type: blob.type || 'image/jpeg'
+            }
+          );
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({
               title: '🍳 我的智能食谱',
@@ -613,7 +718,6 @@ const RecipeGeneratorApp = {
               } - 用AI生成的美味食谱！`,
               files: [file]
             });
-
             this.showSuccessMessage('📤 分享成功！');
             return;
           }
