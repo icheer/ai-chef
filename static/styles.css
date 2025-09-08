@@ -209,7 +209,6 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
 .recipe-loading { text-align:center; padding:3rem 1rem 3.5rem; position:relative; }
 .recipe-loading h3 { font-size:1.4rem; margin:1.25rem 0 .5rem; background:linear-gradient(90deg,var(--primary-color),var(--secondary-color)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:700; }
 .recipe-loading p { color:var(--text-secondary); font-size:.9rem; letter-spacing:.5px; }
-.loading-spin { width:70px; height:70px; border:6px solid #e3e9ee; border-top-color:var(--primary-color); border-radius:50%; margin:0 auto; animation:spin 1s linear infinite; }
 .loading-bars { display:flex; justify-content:center; gap:.4rem; margin-top:1.75rem; }
 .loading-bars .bar { width:10px; height:28px; background:linear-gradient(180deg,var(--primary-color),var(--primary-color-dark)); border-radius:6px; opacity:.25; animation:barPulse 1s ease-in-out infinite; }
 @keyframes barPulse { 0%,100% { transform:scaleY(.4); opacity:.25;} 50% { transform:scaleY(1); opacity:.85;} }
