@@ -489,10 +489,9 @@ const RecipeGeneratorApp = {
 
         // 使用html2canvas生成图片 (注意：之前 scale:2 可能导致超大尺寸，这里自适应)
         const deviceScale = window.devicePixelRatio || 1;
-        const targetScale = Math.min(1.5, deviceScale, 2); // 限制最大 1.5，防止超大
         const canvas = await html2canvas(recipeElement, {
           backgroundColor: '#ffffff',
-          scale: targetScale, // 限制放大倍数
+          scale: deviceScale, // 放大倍数
           useCORS: true,
           allowTaint: false,
           height: recipeElement.scrollHeight,
