@@ -512,7 +512,8 @@ const RecipeGeneratorApp = {
           html: `
             <div style="text-align: center; margin: 20px 0;">
               <img src="${imageUrl}" 
-                   style="max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" 
+                   class="share-preview-img"
+                   style="max-width: 100%; max-height: 400px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); -webkit-touch-callout: default; user-select: auto;" 
                    alt="食谱截图">
               <p style="margin-top: 15px; color: #666; font-size: 14px;">
                 📱 <strong>移动端用户：</strong>长按图片保存到相册<br>
@@ -526,9 +527,28 @@ const RecipeGeneratorApp = {
           confirmButtonText: '💾 直接下载',
           cancelButtonText: navigator.share ? '📤 系统分享' : '❌ 关闭',
           showCloseButton: true,
+          allowOutsideClick: false,
+          allowEscapeKey: true,
+          allowEnterKey: false,
           customClass: {
             popup: 'share-popup',
             image: 'share-image'
+          },
+          didOpen: () => {
+            // 解除 SweetAlert2 / 全局样式对图片长按的影响
+            const img = document.querySelector('.swal2-popup.share-popup .share-preview-img');
+            if (img) {
+              img.style.webkitTouchCallout = 'default';
+              img.style.webkitUserSelect = 'auto';
+              img.style.userSelect = 'auto';
+              img.style.pointerEvents = 'auto';
+              // 防止点击图片触发关闭（某些 UA 会把点击冒泡到按钮）
+              img.addEventListener('click', e => e.stopPropagation());
+              // 避免 contextmenu 被阻止（桌面调试）
+              img.addEventListener('contextmenu', e => e.stopPropagation());
+              // 触摸长按时不要触发默认的拖拽阻断
+              img.setAttribute('draggable', 'false');
+            }
           },
           willClose: () => {
             // 清理图片URL

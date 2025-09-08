@@ -164,6 +164,19 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
 /* ========== 12. 分享弹窗（Swal2） ========== */
 .swal2-popup.share-popup { border-radius:16px !important; }
 .swal2-popup.share-popup img { display: inline-block; border-radius:12px; box-shadow:0 4px 18px rgba(0,0,0,.18); }
+.swal2-popup.share-popup .share-preview-img {
+  -webkit-user-select: auto !important;
+  user-select: auto !important;
+  -webkit-touch-callout: default !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+/* 避免 SweetAlert2 默认阻止长按 (有些主题会设置) */
+.swal2-popup.share-popup {
+  -webkit-user-select: none;
+  user-select: none;
+}
 
 /* ========== 13. 响应式（移动优先） ========== */
 @media (max-width: 767px) {
