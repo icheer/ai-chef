@@ -121,13 +121,15 @@ const RecipeGeneratorApp = {
     },
 
     // 食材管理方法
-    addIngredient(name, category = '其他') {
+    addIngredient(name, category = '其他', isForceAdd = false) {
       const existing = this.selectedIngredients.find(
         item => item.name === name
       );
       if (existing) {
-        // 移除食材
-        this.removeIngredient(this.selectedIngredients.indexOf(existing));
+        if (!isForceAdd) {
+          // 移除食材
+          this.removeIngredient(this.selectedIngredients.indexOf(existing));
+        }
       } else {
         this.selectedIngredients.push({
           name: name,
@@ -175,7 +177,7 @@ const RecipeGeneratorApp = {
     addCustomIngredient() {
       const name = this.customIngredientName.trim();
       if (name) {
-        this.addIngredient(name);
+        this.addIngredient(name, '其他', true);
         this.customIngredientName = '';
       } else {
         this.showWarningMessage('请输入食材名称');
