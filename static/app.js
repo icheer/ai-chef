@@ -634,7 +634,15 @@ const RecipeGeneratorApp = {
 
     // 欢迎消息
     if (!this.lastSaveTime) {
-      this.showSuccessMessage('欢迎使用智能食谱生成器！请选择您的食材开始');
+      Swal.fire({
+        icon: 'success',
+        title: '您好',
+        text: '欢迎使用智能食谱生成器！请选择您的食材开始',
+        timer: 6000,
+        showConfirmButton: false,
+        position: 'top-end',
+        toast: true
+      });
     }
   }
 };
