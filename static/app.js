@@ -116,8 +116,6 @@ const RecipeGeneratorApp = {
         allowTaint: false,
         width,
         height,
-        windowWidth: width,
-        windowHeight: height,
         logging: false
       });
     },
