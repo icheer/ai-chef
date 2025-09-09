@@ -65,12 +65,25 @@
 
           <div class="form-row">
             <label>可用时间:</label>
-            <input
-              type="number"
-              v-model.number="userProfile.time_available"
-              min="5"
-              max="180"
-            />
+            <div class="quantity-control">
+              <button
+                @click="userProfile.time_available = Math.max(5, userProfile.time_available - 5)"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                v-model.number="userProfile.time_available"
+                min="5"
+                max="180"
+                style="flex: 1 1 0"
+              />
+              <button
+                @click="userProfile.time_available = Math.min(180, userProfile.time_available + 5)"
+              >
+                +
+              </button>
+            </div>
             <span class="unit">分钟</span>
           </div>
 
@@ -448,6 +461,6 @@
       </section>
     </div>
 
-    <script src="./app.js?v=15"></script>
+    <script src="./app.js?v=16"></script>
   </body>
 </html>
