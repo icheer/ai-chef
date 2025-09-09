@@ -194,9 +194,13 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
   .app-header { padding:1.6rem 1rem; margin-bottom:1.25rem; }
   .app-header h1 { font-size:1.75rem; }
   section { padding:1.4rem 1.25rem; margin-bottom:1.25rem; }
-  .ingredient-categories { grid-template-columns:1fr; }
-  .ingredient-item { flex-direction:column; align-items:stretch; padding-top:2.4rem; }
-  .ingredient-item .name { background:var(--light-gray); padding:.6rem .75rem; border-radius:8px; text-align:center; }
+  .ingredient-categories { grid-template-columns:1fr; gap:1rem; }
+  .category { padding:1rem 1rem .85rem; }
+  .category h4 { font-size:1rem; margin-bottom:.6rem; }
+  .ingredient-buttons { gap:.5rem; }
+  .ingredient-btn { padding:.55rem .95rem; font-size:.85rem; }
+  .ingredient-item { flex-direction:column; align-items:stretch; padding:1.8rem 1rem 1rem; gap:.75rem; }
+  .ingredient-item .name { background:var(--light-gray); padding:.5rem .7rem; border-radius:8px; text-align:center; font-size:.95rem; }
   .quantity-unit-wrapper { justify-content:center; }
   .recipe-header { padding:1.8rem 1rem 1.6rem; }
   .recipe-title { font-size:1.75rem; }
