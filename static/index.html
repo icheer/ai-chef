@@ -33,12 +33,24 @@
         <div class="profile-form">
           <div class="form-row">
             <label>用餐人数:</label>
-            <input
-              type="number"
-              v-model.number="userProfile.serving_size"
-              min="1"
-              max="10"
-            />
+            <div class="quantity-control">
+              <button
+                @click="userProfile.serving_size = Math.max(1, userProfile.serving_size - 1)"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                v-model.number="userProfile.serving_size"
+                min="1"
+                max="10"
+              />
+              <button
+                @click="userProfile.serving_size = Math.min(10, userProfile.serving_size + 1)"
+              >
+                +
+              </button>
+            </div>
           </div>
 
           <div class="form-row">

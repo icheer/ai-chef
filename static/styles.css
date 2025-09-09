@@ -161,6 +161,15 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
 .tips-list li::before { content:'💡 '; }
 .variations-list li::before { content:'🔄 '; }
 
+/* ========== 生成中 Loading 样式 ========== */
+.recipe-loading { text-align:center; padding:3rem 1rem 3.5rem; position:relative; }
+.recipe-loading h3 { font-size:1.4rem; margin:1.25rem 0 .5rem; background:linear-gradient(90deg,var(--primary-color),var(--secondary-color)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:700; }
+.recipe-loading p { color:var(--text-secondary); font-size:.9rem; letter-spacing:.5px; }
+.loading-bars { display:flex; justify-content:center; gap:.4rem; margin-top:1.75rem; }
+.loading-bars .bar { width:10px; height:28px; background:linear-gradient(180deg,var(--primary-color),var(--primary-color-dark)); border-radius:6px; opacity:.25; animation:barPulse 1s ease-in-out infinite; }
+@keyframes barPulse { 0%,100% { transform:scaleY(.4); opacity:.25;} 50% { transform:scaleY(1); opacity:.85;} }
+
+
 /* ========== 12. 分享弹窗（Swal2） ========== */
 .swal2-popup.share-popup { border-radius:16px !important; }
 .swal2-popup.share-popup img { display: inline-block; border-radius:12px; box-shadow:0 4px 18px rgba(0,0,0,.18); }
@@ -185,6 +194,7 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
   .app-header { padding:1.6rem 1rem; margin-bottom:1.25rem; }
   .app-header h1 { font-size:1.75rem; }
   section { padding:1.4rem 1.25rem; margin-bottom:1.25rem; }
+  select[multiple] { min-height:auto; padding-top:inherit; }
   .ingredient-categories { grid-template-columns:1fr; }
   .ingredient-item { flex-direction:column; align-items:stretch; padding-top:2.4rem; }
   .ingredient-item .name { background:var(--light-gray); padding:.6rem .75rem; border-radius:8px; text-align:center; }
@@ -218,11 +228,3 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
   .recipe-result { box-shadow:none; border:none; margin:0; }
   .nutrition-section, .ingredients-section, .cooking-steps-section, .tips-section, .variations-section { page-break-inside:avoid; }
 }
-
-/* ========== 15. 生成中 Loading 样式 ========== */
-.recipe-loading { text-align:center; padding:3rem 1rem 3.5rem; position:relative; }
-.recipe-loading h3 { font-size:1.4rem; margin:1.25rem 0 .5rem; background:linear-gradient(90deg,var(--primary-color),var(--secondary-color)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:700; }
-.recipe-loading p { color:var(--text-secondary); font-size:.9rem; letter-spacing:.5px; }
-.loading-bars { display:flex; justify-content:center; gap:.4rem; margin-top:1.75rem; }
-.loading-bars .bar { width:10px; height:28px; background:linear-gradient(180deg,var(--primary-color),var(--primary-color-dark)); border-radius:6px; opacity:.25; animation:barPulse 1s ease-in-out infinite; }
-@keyframes barPulse { 0%,100% { transform:scaleY(.4); opacity:.25;} 50% { transform:scaleY(1); opacity:.85;} }
