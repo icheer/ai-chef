@@ -221,9 +221,9 @@ const RecipeGeneratorApp = {
               ? `请在 ${Math.ceil(result.reset_in_seconds / 60)} 分钟后重试`
               : '请稍后重试';
             throw new Error(
-              `${result.error || '已达调用上限'} (模型: ${result.model} 已用 ${
-                result.used
-              }/${result.limit})，${retryMsg}`
+              `${result.error || '本小时已达模型调用上限'} (模型: ${
+                result.model
+              } 已用 ${result.used}/${result.limit})，${retryMsg}`
             );
           }
           throw new Error(result.error || '请求失败');
@@ -244,7 +244,9 @@ const RecipeGeneratorApp = {
         });
       } catch (error) {
         console.error('生成食谱失败:', error);
-        this.showErrorMessage(`生成失败: ${error.message}`);
+        this.showErrorMessage(
+          `生成失败: ${error.message}<br><br><small>模型针对免费层级用户劣化体验，偶尔会调用失败。请稍后（保持克制的）重试</small>`
+        );
       } finally {
         this.isLoading = false;
       }
@@ -267,7 +269,7 @@ const RecipeGeneratorApp = {
       Swal.fire({
         icon: 'error',
         title: '错误',
-        text: message,
+        html: message,
         confirmButtonColor: '#E74C3C'
       });
     },
@@ -651,4 +653,4 @@ const RecipeGeneratorApp = {
 };
 
 // 启动Vue应用
-createApp(RecipeGeneratorApp).mount('#app');
+const app = createApp(RecipeGeneratorApp).mount('#app');
