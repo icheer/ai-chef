@@ -359,6 +359,7 @@ const RecipeGeneratorApp = {
         text: '这将删除所有保存的表单数据和食谱',
         icon: 'warning',
         showCancelButton: true,
+        reverseButtons: true,
         confirmButtonText: '确认清除',
         cancelButtonText: '取消',
         confirmButtonColor: '#E74C3C'
@@ -568,6 +569,7 @@ const RecipeGeneratorApp = {
         title: '确认清除食谱',
         text: '这将清除当前生成的食谱结果',
         icon: 'question',
+        reverseButtons: true,
         showCancelButton: true,
         confirmButtonText: '确认清除',
         cancelButtonText: '取消'
