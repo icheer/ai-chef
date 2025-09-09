@@ -147,8 +147,8 @@ const RecipeGeneratorApp = {
       const defaultUnits = {
         蛋白质: '个',
         蔬菜: '个',
-        主食: 'Kg',
-        干货: 'Kg',
+        主食: 'kg',
+        干货: 'kg',
         其他: '个'
       };
       return defaultUnits[category] || '个';

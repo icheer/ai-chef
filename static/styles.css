@@ -99,7 +99,7 @@ button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
 .ingredient-item:hover { border-color:var(--primary-color); box-shadow:0 4px 18px rgba(46,204,113,.18); }
 .ingredient-item .name { font-weight:600; min-width:90px; }
 .quantity-unit-wrapper { display:flex; align-items:center; gap:.9rem; }
-.quantity-control { display:flex; align-items:center; gap:.4rem; background:var(--light-gray); padding:.25rem; border-radius:var(--radius-md); border:2px solid var(--border-color); }
+.quantity-control { display:flex; align-items:center; gap:.4rem; background:var(--light-gray); padding:0 .25rem; border-radius:var(--radius-md); border:2px solid var(--border-color); }
 .quantity-control button { width:34px; height:34px; background:#fff; color:var(--primary-color); border:none; border-radius:8px; font-weight:700; font-size:1.1rem; }
 .quantity-control button:hover { background:var(--primary-color); color:#fff; }
 .quantity-control input { width:80px; background:transparent; border:none; font-weight:600; }
