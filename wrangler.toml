@@ -1,4 +1,4 @@
-name = "smart-recipe-generator"
+name = "ai-chef"
 main = "worker.built.js"
 compatibility_date = "2024-01-01"
 

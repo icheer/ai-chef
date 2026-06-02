@@ -86,32 +86,34 @@ const RecipeGeneratorApp = {
         ]
       },
 
+      // 菜系偏好选项
+      cuisineOptions: ['中式', '西式', '日式', '韩式', '东南亚'],
+
       // 应用状态
       isLoading: false,
-      selectedModel: 'gemini-2.5-flash',
+      selectedModel: 'google/gemini-3.5-flash',
       recipeResult: null,
       showResult: false,
       isCapturing: false,
 
       // localStorage相关
       storageKey: 'smart-recipe-generator',
-      lastSaveTime: null
+      lastSaveTime: null,
+      _saveTimer: null
     };
   },
 
   methods: {
     // ======= 简化截图实现（参考 guide 页面写法，提升稳定性） =======
     async captureRecipeCanvas(element) {
-      // 确保渲染结束
       await this.$nextTick();
-      // 滚动到视图内
       element.scrollIntoView({ behavior: 'auto', block: 'start' });
       await new Promise(r => setTimeout(r, 50));
       const width = Math.ceil(element.scrollWidth);
       const height = Math.ceil(element.scrollHeight);
-      const scale = Math.min(2, window.devicePixelRatio || 1); // 最高 2 倍
+      const scale = Math.min(2, window.devicePixelRatio || 1);
       return await html2canvas(element, {
-        backgroundColor: '#ffffff',
+        backgroundColor: '#fcfcfc',
         scale,
         useCORS: true,
         allowTaint: false,
@@ -308,6 +310,11 @@ const RecipeGeneratorApp = {
 
     // localStorage数据持久化
     saveToLocalStorage() {
+      clearTimeout(this._saveTimer);
+      this._saveTimer = setTimeout(() => this._doSave(), 300);
+    },
+
+    _doSave() {
       const dataToSave = {
         userProfile: this.userProfile,
         dietaryRestrictions: this.dietaryRestrictions,
@@ -339,7 +346,7 @@ const RecipeGeneratorApp = {
             ...data.dietaryRestrictions
           };
           this.selectedIngredients = data.selectedIngredients || [];
-          this.selectedModel = data.selectedModel || 'gemini-2.5-flash';
+          this.selectedModel = data.selectedModel || 'google/gemini-3.5-flash';
 
           // 恢复食谱结果
           if (data.recipeResult) {
@@ -548,13 +555,12 @@ const RecipeGeneratorApp = {
         }
 
         // 如果系统分享不可用，降级到下载
-        await this.downloadImage(blob);
+        await this.downloadImage(URL.createObjectURL(blob));
       } catch (error) {
         if (error.name !== 'AbortError') {
-          // 用户取消分享不算错误
           console.error('系统分享失败:', error);
           this.showErrorMessage('系统分享失败，已改为下载到本地');
-          await this.downloadImage(blob);
+          await this.downloadImage(URL.createObjectURL(blob));
         }
       }
     },
@@ -634,21 +640,7 @@ const RecipeGeneratorApp = {
   },
 
   mounted() {
-    // 组件挂载后的初始化
     this.loadFromLocalStorage();
-
-    // 欢迎消息
-    if (!this.lastSaveTime) {
-      Swal.fire({
-        icon: 'success',
-        title: '您好',
-        text: '欢迎使用智能食谱生成器！请选择您的食材开始',
-        timer: 6000,
-        showConfirmButton: false,
-        position: 'top-end',
-        toast: true
-      });
-    }
   }
 };
 

@@ -7,20 +7,20 @@ const staticFiles = {
 
 // =============================================
 // 模型调用计数（仅当前 Worker 进程内记忆，可能因实例回收而重置）
-// 需求：按“整点”统计 gemini-2.5-pro / gemini-2.5-flash 调用次数
+// 需求：按“整点”统计 gemini-3.1-pro-preview / gemini-3.5-flash 调用次数
 // 限额：pro 15 次 / hour, flash 50 次 / hour
 // =============================================
 const MODEL_LIMITS = {
-  'gemini-2.5-pro': 15,
-  'gemini-2.5-flash': 50
+  'gemini-3.1-pro-preview': 15,
+  'gemini-3.5-flash': 50
 };
 
 // 保存当前整点 key 及各模型计数
 const modelUsageState = {
   hourKey: 0,
   counts: {
-    'gemini-2.5-pro': 0,
-    'gemini-2.5-flash': 0
+    'gemini-3.1-pro-preview': 0,
+    'gemini-3.5-flash': 0
   }
 };
 
@@ -31,8 +31,8 @@ function checkAndIncreaseModelUsage(model) {
   // 跨整点重置
   if (modelUsageState.hourKey !== currentHourKey) {
     modelUsageState.hourKey = currentHourKey;
-    modelUsageState.counts['gemini-2.5-pro'] = 0;
-    modelUsageState.counts['gemini-2.5-flash'] = 0;
+    modelUsageState.counts['gemini-3.1-pro-preview'] = 0;
+    modelUsageState.counts['gemini-3.5-flash'] = 0;
   }
 
   const limit = MODEL_LIMITS[model] ?? 50; // 未知模型给默认上限 50
@@ -177,6 +177,7 @@ async function callGeminiAPI(prompt, model, env) {
   );
 
   if (!response.ok) {
+    console.error(JSON.stringify(response));
     throw new Error(`Gemini API调用失败: ${response.status}`);
   }
 
@@ -302,7 +303,7 @@ async function handleRecipeGeneration(request, env) {
     }
 
     // 确认模型并做限流检查
-    const model = requestData.selectedModel || 'gemini-2.5-pro';
+    const model = requestData.selectedModel || 'gemini-3.1-pro-preview';
     const usage = checkAndIncreaseModelUsage(model);
     if (!usage.allowed) {
       return new Response(

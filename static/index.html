@@ -1,61 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=no"
-    />
-    <title>🍳 智能食谱生成器</title>
-
-    <!-- CDN资源引入 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>智能食谱生成器</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/sweetalert2@11"></script>
     <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
-    <!-- 使用清理后的样式文件，如需回滚可改回 styles.css -->
-    <link rel="stylesheet" href="./styles.css?v=11" />
+    <link rel="stylesheet" href="./styles.css?v=12" />
   </head>
   <body>
     <div id="app">
-      <!-- 应用标题 -->
+
       <header class="app-header">
-        <h1>🍳 智能食谱生成器</h1>
-        <p class="subtitle">输入冰箱现有食材，AI为您生成创意食谱</p>
+        <h1>智能食谱生成器</h1>
+        <p class="subtitle">告诉我冰箱里有什么，我来决定今天吃什么</p>
         <div class="save-status" v-if="lastSaveTime">
           <small>{{ lastSaveText }}</small>
         </div>
       </header>
 
-      <!-- 用户档案区域 -->
       <section class="user-profile">
-        <h2>🗂️ 用户档案</h2>
+        <h2>基本设置</h2>
         <div class="profile-form">
           <div class="form-row">
-            <label>用餐人数:</label>
+            <label>用餐人数</label>
             <div class="quantity-control">
-              <button
-                @click="userProfile.serving_size = Math.max(1, userProfile.serving_size - 1)"
-              >
-                -
-              </button>
-              <input
-                type="number"
-                v-model.number="userProfile.serving_size"
-                min="1"
-                max="10"
-                style="flex: 1 1 0"
-              />
-              <button
-                @click="userProfile.serving_size = Math.min(10, userProfile.serving_size + 1)"
-              >
-                +
-              </button>
+              <button @click="userProfile.serving_size = Math.max(1, userProfile.serving_size - 1)">−</button>
+              <input type="number" v-model.number="userProfile.serving_size" min="1" max="10" style="flex:1 1 0" />
+              <button @click="userProfile.serving_size = Math.min(10, userProfile.serving_size + 1)">+</button>
             </div>
           </div>
 
           <div class="form-row">
-            <label>烹饪技能:</label>
+            <label>烹饪技能</label>
             <select v-model="userProfile.cooking_skill">
               <option value="初级">初级</option>
               <option value="中级">中级</option>
@@ -64,42 +42,35 @@
           </div>
 
           <div class="form-row">
-            <label>可用时间:</label>
-            <div class="quantity-control">
-              <button
-                @click="userProfile.time_available = Math.max(5, userProfile.time_available - 5)"
-              >
-                -
-              </button>
-              <input
-                type="number"
-                v-model.number="userProfile.time_available"
-                min="5"
-                max="180"
-                style="flex: 1 1 0"
-              />
-              <button
-                @click="userProfile.time_available = Math.min(180, userProfile.time_available + 5)"
-              >
-                +
-              </button>
+            <label>可用时间</label>
+            <div style="display:flex;align-items:center;gap:.5rem;flex:1">
+              <div class="quantity-control" style="flex:1">
+                <button @click="userProfile.time_available = Math.max(5, userProfile.time_available - 5)">−</button>
+                <input type="number" v-model.number="userProfile.time_available" min="5" max="180" style="flex:1 1 0" />
+                <button @click="userProfile.time_available = Math.min(180, userProfile.time_available + 5)">+</button>
+              </div>
+              <span class="unit">分钟</span>
             </div>
-            <span class="unit">分钟</span>
           </div>
 
           <div class="form-row">
-            <label>菜系偏好:</label>
-            <select v-model="userProfile.cuisine_preferences" multiple>
-              <option value="中式">中式</option>
-              <option value="西式">西式</option>
-              <option value="日式">日式</option>
-              <option value="韩式">韩式</option>
-              <option value="东南亚">东南亚</option>
-            </select>
+            <label>菜系偏好</label>
+            <div class="cuisine-options">
+              <button
+                v-for="c in cuisineOptions"
+                :key="c"
+                type="button"
+                class="ingredient-btn"
+                :class="{ selected: userProfile.cuisine_preferences.includes(c) }"
+                @click="userProfile.cuisine_preferences.includes(c)
+                  ? userProfile.cuisine_preferences.splice(userProfile.cuisine_preferences.indexOf(c), 1)
+                  : userProfile.cuisine_preferences.push(c)"
+              >{{ c }}</button>
+            </div>
           </div>
 
           <div class="form-row">
-            <label>辣度承受:</label>
+            <label>辣度</label>
             <select v-model="userProfile.spice_tolerance">
               <option value="不辣">不辣</option>
               <option value="微辣">微辣</option>
@@ -110,39 +81,23 @@
         </div>
       </section>
 
-      <!-- 饮食限制区域 -->
       <section class="dietary-restrictions">
-        <h3>🚫 饮食限制</h3>
+        <h2>饮食限制</h2>
         <div class="restrictions-form">
           <div class="form-row">
-            <label>过敏食材:</label>
-            <input
-              type="text"
-              v-model="dietaryRestrictions.allergies"
-              placeholder="如：花生、海鲜（逗号分隔）"
-            />
+            <label>过敏食材</label>
+            <input type="text" v-model="dietaryRestrictions.allergies" placeholder="花生、海鲜（逗号分隔）" />
           </div>
-
           <div class="form-row">
-            <label>不耐受:</label>
-            <input
-              type="text"
-              v-model="dietaryRestrictions.intolerances"
-              placeholder="如：乳糖、麸质（逗号分隔）"
-            />
+            <label>不耐受</label>
+            <input type="text" v-model="dietaryRestrictions.intolerances" placeholder="乳糖、麸质（逗号分隔）" />
           </div>
-
           <div class="form-row">
-            <label>不喜欢的食材:</label>
-            <input
-              type="text"
-              v-model="dietaryRestrictions.dislikes"
-              placeholder="如：香菜、苦瓜（逗号分隔）"
-            />
+            <label>不喜欢</label>
+            <input type="text" v-model="dietaryRestrictions.dislikes" placeholder="香菜、苦瓜（逗号分隔）" />
           </div>
-
           <div class="form-row">
-            <label>饮食类型:</label>
+            <label>饮食类型</label>
             <select v-model="dietaryRestrictions.diet_type">
               <option value="无特殊要求">无特殊要求</option>
               <option value="素食">素食</option>
@@ -154,16 +109,10 @@
         </div>
       </section>
 
-      <!-- 食材选择区域 -->
       <section class="ingredient-selection">
-        <h2>🥘 选择食材</h2>
-
+        <h2>选择食材</h2>
         <div class="ingredient-categories">
-          <div
-            v-for="(ingredients, category) in ingredientCategories"
-            :key="category"
-            class="category"
-          >
+          <div v-for="(ingredients, category) in ingredientCategories" :key="category" class="category">
             <h4>{{ category }}</h4>
             <div class="ingredient-buttons">
               <button
@@ -172,50 +121,27 @@
                 @click="addIngredient(ingredient, category)"
                 class="ingredient-btn"
                 :class="{ selected: isIngredientSelected(ingredient) }"
-              >
-                <span>{{ ingredient }}</span>
-              </button>
+              >{{ ingredient }}</button>
             </div>
           </div>
         </div>
-
-        <!-- 手动添加食材 -->
         <div class="add-custom">
-          <input
-            type="text"
-            v-model="customIngredientName"
-            placeholder="输入食材名称"
-            @keyup.enter="addCustomIngredient"
-          />
-          <button @click="addCustomIngredient" class="btn-secondary">
-            添加
-          </button>
+          <input type="text" v-model="customIngredientName" placeholder="其他食材" @keyup.enter="addCustomIngredient" />
+          <button @click="addCustomIngredient" class="btn-secondary">添加</button>
         </div>
       </section>
 
-      <!-- 已选食材管理 -->
       <section class="selected-ingredients">
-        <h3>✅ 现有食材 ({{ ingredientCount }}种)</h3>
-
+        <h2>已选食材（{{ ingredientCount }} 种）</h2>
         <div v-if="ingredientCount === 0" class="empty-state">
-          请从上方选择食材，或手动添加
+          从上方选择食材，或手动输入
         </div>
-
         <div v-else class="ingredients-list">
-          <div
-            v-for="(ingredient, index) in selectedIngredients"
-            :key="index"
-            class="ingredient-item"
-          >
+          <div v-for="(ingredient, index) in selectedIngredients" :key="index" class="ingredient-item">
             <span class="name">{{ ingredient.name }}</span>
-
             <div class="quantity-unit-wrapper">
               <div class="quantity-control">
-                <button
-                  @click="updateIngredientQuantity(index, ingredient.quantity - 0.5)"
-                >
-                  -
-                </button>
+                <button @click="updateIngredientQuantity(index, ingredient.quantity - 0.5)">−</button>
                 <input
                   type="number"
                   v-model.number="ingredient.quantity"
@@ -223,13 +149,8 @@
                   min="0"
                   step="0.1"
                 />
-                <button
-                  @click="updateIngredientQuantity(index, ingredient.quantity + 0.5)"
-                >
-                  +
-                </button>
+                <button @click="updateIngredientQuantity(index, ingredient.quantity + 0.5)">+</button>
               </div>
-
               <select v-model="ingredient.unit">
                 <option value="个">个</option>
                 <option value="g">g</option>
@@ -238,227 +159,125 @@
                 <option value="L">L</option>
               </select>
             </div>
-
             <select v-model="ingredient.freshness">
               <option value="新鲜">新鲜</option>
               <option value="一般">一般</option>
               <option value="需尽快使用">需尽快使用</option>
             </select>
-
-            <button
-              @click="removeIngredient(index)"
-              class="remove-btn"
-            ></button>
+            <button @click="removeIngredient(index)" class="remove-btn"></button>
           </div>
         </div>
       </section>
 
-      <!-- 生成控制区域 -->
       <section class="generation-controls">
-        <h3>🤖 生成设置</h3>
-
+        <h2>生成设置</h2>
         <div class="model-selection">
-          <label>AI模型选择:</label>
+          <label>模型</label>
           <select v-model="selectedModel">
-            <option value="gemini-2.5-flash">
-              Gemini 2.5 Flash (推荐，更快)
-            </option>
-            <option value="gemini-2.5-pro">
-              Gemini 2.5 Pro (更强，可能不稳定)
-            </option>
+            <option value="google/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite（最快）</option>
+            <option value="google/gemini-3.5-flash">Gemini 3.5 Flash（推荐）</option>
+            <option value="google/gemini-3.1-pro-preview" disabled>Gemini 3.1 Pro（暂不可用）</option>
           </select>
         </div>
-
-        <button
-          @click="generateRecipe"
-          :disabled="!formIsValid || isLoading"
-          class="generate-btn"
-        >
-          <span v-if="isLoading">🔄 生成中...</span>
-          <span v-else>✨ 生成食谱</span>
+        <button @click="generateRecipe" :disabled="!formIsValid || isLoading" class="generate-btn">
+          <span v-if="isLoading">生成中...</span>
+          <span v-else>生成食谱</span>
         </button>
-
-        <!-- 数据管理按钮 -->
         <div class="data-controls">
-          <button
-            @click="clearLocalStorage"
-            class="btn-danger"
-            :disabled="isLoading"
-          >
-            🗑️ 清除保存数据
-          </button>
+          <button @click="clearLocalStorage" class="btn-danger" :disabled="isLoading">清除保存数据</button>
         </div>
       </section>
 
-      <!-- 食谱展示区域 (加载或已有结果都显示容器) -->
       <section v-if="showResult || isLoading" class="recipe-result">
-        <!-- Loading 骨架 -->
         <div v-if="isLoading" class="recipe-loading">
-          <h3>正在生成 AI 食谱...</h3>
-          <p>根据您的食材与偏好智能规划菜谱，请稍候</p>
+          <h3>正在生成食谱</h3>
+          <p>根据您的食材与偏好规划菜谱，请稍候</p>
           <div class="loading-bars">
-            <span
-              v-for="n in 5"
-              :key="n"
-              class="bar"
-              :style="{ animationDelay: (n*0.12) + 's' }"
-            ></span>
+            <span v-for="n in 5" :key="n" class="bar" :style="{ animationDelay: (n * 0.12) + 's' }"></span>
           </div>
         </div>
 
-        <!-- 食谱概要 -->
         <template v-else>
           <header class="recipe-header">
-            <h2 class="recipe-title">
-              {{ recipeResult.recipe_name || '美味食谱' }}
-            </h2>
+            <h1 class="recipe-title">{{ recipeResult.recipe_name || '美味食谱' }}</h1>
             <div class="recipe-meta">
-              <span class="time"
-                >⏱️ {{ recipeResult.cooking_time || 30 }}分钟</span
-              >
-              <span class="difficulty"
-                >📊 {{ recipeResult.difficulty || '简单' }}</span
-              >
-              <span class="servings"
-                >👥 {{ recipeResult.serving_size || userProfile.serving_size
-                }}人份</span
-              >
-              <span v-if="recipeResult.cuisine_style" class="cuisine"
-                >🍽️ {{ recipeResult.cuisine_style }}</span
-              >
+              <span>{{ recipeResult.cooking_time || 30 }} 分钟</span>
+              <span>{{ recipeResult.difficulty || '简单' }}</span>
+              <span>{{ recipeResult.serving_size || userProfile.serving_size }} 人份</span>
+              <span v-if="recipeResult.cuisine_style">{{ recipeResult.cuisine_style }}</span>
             </div>
-            <p class="recipe-description">
-              {{ recipeResult.description || '一道美味的家常菜' }}
-            </p>
-
-            <!-- 操作按钮 -->
+            <p class="recipe-description">{{ recipeResult.description || '一道美味的家常菜' }}</p>
             <div v-show="!isCapturing" class="recipe-actions">
-              <button @click="shareRecipe" class="btn-secondary">
-                📤 分享食谱
-              </button>
-              <button @click="generateNewRecipe" class="btn-secondary">
-                🔄 重新生成
-              </button>
+              <button @click="shareRecipe" class="btn-secondary">分享</button>
+              <button @click="generateNewRecipe" class="btn-secondary">重新生成</button>
             </div>
           </header>
 
-          <!-- 营养信息 -->
-          <div
-            v-if="!isLoading && recipeResult.nutrition_info"
-            class="nutrition-section"
-          >
-            <h3>📊 营养信息</h3>
+          <div v-if="recipeResult.nutrition_info" class="nutrition-section">
+            <h3>营养信息</h3>
             <div class="nutrition-grid">
               <div class="nutrition-item">
                 <span class="label">热量</span>
-                <span class="value"
-                  >{{ recipeResult.nutrition_info.calories_per_serving || 'N/A'
-                  }}</span
-                >
+                <span class="value">{{ recipeResult.nutrition_info.calories_per_serving || '—' }}</span>
               </div>
               <div class="nutrition-item">
                 <span class="label">蛋白质</span>
-                <span class="value"
-                  >{{ recipeResult.nutrition_info.protein || 'N/A' }}</span
-                >
+                <span class="value">{{ recipeResult.nutrition_info.protein || '—' }}</span>
               </div>
               <div class="nutrition-item">
                 <span class="label">碳水</span>
-                <span class="value"
-                  >{{ recipeResult.nutrition_info.carbs || 'N/A' }}</span
-                >
+                <span class="value">{{ recipeResult.nutrition_info.carbs || '—' }}</span>
               </div>
               <div class="nutrition-item">
                 <span class="label">脂肪</span>
-                <span class="value"
-                  >{{ recipeResult.nutrition_info.fats || 'N/A' }}</span
-                >
+                <span class="value">{{ recipeResult.nutrition_info.fats || '—' }}</span>
               </div>
             </div>
           </div>
 
-          <!-- 所需食材 -->
-          <div
-            v-if="!isLoading && recipeResult.ingredients"
-            class="ingredients-section"
-          >
-            <h3>🛒 所需食材</h3>
+          <div v-if="recipeResult.ingredients" class="ingredients-section">
+            <h3>所需食材</h3>
             <ul class="ingredients-list">
-              <li
-                v-for="ingredient in recipeResult.ingredients"
-                :key="ingredient.name"
-                class="ingredient-row"
-              >
-                <span class="ingredient-amount"
-                  >{{ ingredient.quantity || ingredient.amount }} {{
-                  ingredient.unit }}</span
-                >
+              <li v-for="ingredient in recipeResult.ingredients" :key="ingredient.name" class="ingredient-row">
+                <span class="ingredient-amount">{{ ingredient.quantity || ingredient.amount }} {{ ingredient.unit }}</span>
                 <span class="ingredient-name">{{ ingredient.name }}</span>
-                <span
-                  v-if="ingredient.notes || ingredient.role"
-                  class="ingredient-notes"
-                  >({{ ingredient.notes || ingredient.role }})</span
-                >
+                <span v-if="ingredient.notes || ingredient.role" class="ingredient-notes">{{ ingredient.notes || ingredient.role }}</span>
               </li>
             </ul>
           </div>
 
-          <!-- 烹饪步骤 -->
-          <div
-            v-if="!isLoading && recipeResult.cooking_steps"
-            class="cooking-steps-section"
-          >
-            <h3>🍳 烹饪步骤</h3>
+          <div v-if="recipeResult.cooking_steps" class="cooking-steps-section">
+            <h3>烹饪步骤</h3>
             <div class="steps-container">
-              <div
-                v-for="(step, index) in recipeResult.cooking_steps"
-                :key="index"
-                class="cooking-step"
-              >
+              <div v-for="(step, index) in recipeResult.cooking_steps" :key="index" class="cooking-step">
                 <div class="step-number">{{ step.step || (index + 1) }}</div>
                 <div class="step-content">
-                  <h4 v-if="step.action" class="step-title">
-                    {{ step.action }}
-                  </h4>
-                  <p class="step-instruction">
-                    {{ step.description || step.instruction }}
-                  </p>
-                  <p v-if="step.time" class="step-time">⏱️ {{ step.time }}</p>
-                  <p v-if="step.tips" class="step-tip">💡 {{ step.tips }}</p>
+                  <h4 v-if="step.action" class="step-title">{{ step.action }}</h4>
+                  <p class="step-instruction">{{ step.description || step.instruction }}</p>
+                  <p v-if="step.time" class="step-time">{{ step.time }}</p>
+                  <p v-if="step.tips" class="step-tip">{{ step.tips }}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- 厨师小贴士 -->
-          <div
-            v-if="!isLoading && recipeResult.chef_tips && recipeResult.chef_tips.length > 0"
-            class="tips-section"
-          >
-            <h3>👨‍🍳 厨师小贴士</h3>
+          <div v-if="recipeResult.chef_tips && recipeResult.chef_tips.length > 0" class="tips-section">
+            <h3>厨师建议</h3>
             <ul class="tips-list">
-              <li v-for="tip in recipeResult.chef_tips" :key="tip">
-                {{ tip }}
-              </li>
+              <li v-for="tip in recipeResult.chef_tips" :key="tip">{{ tip }}</li>
             </ul>
           </div>
 
-          <!-- 变化建议 -->
-          <div
-            v-if="!isLoading && recipeResult.variations && recipeResult.variations.length > 0"
-            class="variations-section"
-          >
-            <h3>🔄 变化建议</h3>
+          <div v-if="recipeResult.variations && recipeResult.variations.length > 0" class="variations-section">
+            <h3>变化建议</h3>
             <ul class="variations-list">
-              <li v-for="variation in recipeResult.variations" :key="variation">
-                {{ variation }}
-              </li>
+              <li v-for="variation in recipeResult.variations" :key="variation">{{ variation }}</li>
             </ul>
           </div>
         </template>
       </section>
-    </div>
 
-    <script src="./app.js?v=20"></script>
+    </div>
+    <script src="./app.js?v=21"></script>
   </body>
 </html>
