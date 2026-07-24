@@ -176,8 +176,8 @@ const staticFiles = {
         <div class="model-selection">
           <label>模型</label>
           <select v-model="selectedModel">
-            <option value="google/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite（最快）</option>
-            <option value="google/gemini-3.5-flash">Gemini 3.5 Flash（推荐）</option>
+            <option value="google/gemini-3.5-flash-lite">Gemini 3.5 Flash Lite（最快）</option>
+            <option value="google/gemini-3.6-flash">Gemini 3.6 Flash（推荐）</option>
             <option value="google/gemini-3.1-pro-preview" disabled>Gemini 3.1 Pro（暂不可用）</option>
           </select>
         </div>
@@ -1009,7 +1009,7 @@ const RecipeGeneratorApp = {
 
       // 应用状态
       isLoading: false,
-      selectedModel: 'google/gemini-3.5-flash',
+      selectedModel: 'google/gemini-3.6-flash',
       recipeResult: null,
       showResult: false,
       isCapturing: false,
@@ -1264,7 +1264,7 @@ const RecipeGeneratorApp = {
             ...data.dietaryRestrictions
           };
           this.selectedIngredients = data.selectedIngredients || [];
-          this.selectedModel = data.selectedModel || 'google/gemini-3.5-flash';
+          this.selectedModel = data.selectedModel || 'google/gemini-3.6-flash';
 
           // 恢复食谱结果
           if (data.recipeResult) {
@@ -1574,7 +1574,7 @@ const app = createApp(RecipeGeneratorApp).mount('#app');
 // =============================================
 const MODEL_LIMITS = {
   'gemini-3.1-pro-preview': 15,
-  'gemini-3.5-flash': 50
+  'gemini-3.6-flash': 50
 };
 
 // 保存当前整点 key 及各模型计数
@@ -1582,7 +1582,7 @@ const modelUsageState = {
   hourKey: 0,
   counts: {
     'gemini-3.1-pro-preview': 0,
-    'gemini-3.5-flash': 0
+    'gemini-3.6-flash': 0
   }
 };
 
@@ -1594,7 +1594,7 @@ function checkAndIncreaseModelUsage(model) {
   if (modelUsageState.hourKey !== currentHourKey) {
     modelUsageState.hourKey = currentHourKey;
     modelUsageState.counts['gemini-3.1-pro-preview'] = 0;
-    modelUsageState.counts['gemini-3.5-flash'] = 0;
+    modelUsageState.counts['gemini-3.6-flash'] = 0;
   }
 
   const limit = MODEL_LIMITS[model] ?? 50; // 未知模型给默认上限 50

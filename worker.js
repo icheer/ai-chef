@@ -12,7 +12,7 @@ const staticFiles = {
 // =============================================
 const MODEL_LIMITS = {
   'gemini-3.1-pro-preview': 15,
-  'gemini-3.5-flash': 50
+  'gemini-3.6-flash': 50
 };
 
 // 保存当前整点 key 及各模型计数
@@ -20,7 +20,7 @@ const modelUsageState = {
   hourKey: 0,
   counts: {
     'gemini-3.1-pro-preview': 0,
-    'gemini-3.5-flash': 0
+    'gemini-3.6-flash': 0
   }
 };
 
@@ -32,7 +32,7 @@ function checkAndIncreaseModelUsage(model) {
   if (modelUsageState.hourKey !== currentHourKey) {
     modelUsageState.hourKey = currentHourKey;
     modelUsageState.counts['gemini-3.1-pro-preview'] = 0;
-    modelUsageState.counts['gemini-3.5-flash'] = 0;
+    modelUsageState.counts['gemini-3.6-flash'] = 0;
   }
 
   const limit = MODEL_LIMITS[model] ?? 50; // 未知模型给默认上限 50

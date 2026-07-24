@@ -91,7 +91,7 @@ const RecipeGeneratorApp = {
 
       // 应用状态
       isLoading: false,
-      selectedModel: 'google/gemini-3.5-flash',
+      selectedModel: 'google/gemini-3.6-flash',
       recipeResult: null,
       showResult: false,
       isCapturing: false,
@@ -346,7 +346,7 @@ const RecipeGeneratorApp = {
             ...data.dietaryRestrictions
           };
           this.selectedIngredients = data.selectedIngredients || [];
-          this.selectedModel = data.selectedModel || 'google/gemini-3.5-flash';
+          this.selectedModel = data.selectedModel || 'google/gemini-3.6-flash';
 
           // 恢复食谱结果
           if (data.recipeResult) {
